@@ -1371,10 +1371,41 @@
             }
         }
         
-        // Слушаем изменения авторизации
+                // Слушаем изменения авторизации
         supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                window.location.reload();
+            // Логируем событие для отладки
+            console.log('Auth Event:', event);
+
+            // SIGNED_IN срабатывает при каждом обновлении страницы, если есть сессия.
+            // Нам НЕ нужно перезагружать страницу в этом случае, иначе будет цикл.
+            
+            // Если это ТАБЛИЦА (TOKEN_REFRESHED), тоже ничего не делаем, сессия обновляется автоматически.
+            
+            // Если пользователь ВОШЕЛ (SIGNED_IN) и в URL есть токены (первичный вход от Google)
+            if (event === 'SIGNED_IN') {
+                // Проверяем, есть ли в URL хеш от Google (#access_token)
+                if (window.location.hash.includes('access_token')) {
+                    console.log('OAuth callback detected, cleaning URL...');
+                    
+                    // Очищаем URL от данных Google, чтобы они не висели в адресной строке
+                    // Используем replaceState, чтобы не перезагружать страницу
+                    window.history.replaceState(null, '', window.location.pathname);
+                    
+                    // Инициализируем приложение заново с чистой сессией
+                    // Небольшая задержка, чтобы Supabase успел сохранить сессию
+                    setTimeout(() => {
+                        initApp();
+                    }, 100);
+                }
+            }
+            
+            // Если пользователь вышел
+            if (event === 'SIGNED_OUT') {
+                AppState.currentUser = null;
+                AppState.appUser = null;
+                AppState.isAuthenticated = false;
+                UI.showAuthView('google-auth-view');
+                UI.showScreen('auth-screen');
             }
         });
         
