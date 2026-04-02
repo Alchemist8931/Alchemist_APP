@@ -38,6 +38,7 @@
                         'surface-bright': '#0D0D0D',
                     },
                     fontFamily: {
+                        sans: ['SN Pro', 'sans-serif'], // ИЗМЕНЕНО: добавили sans
                         'display': ['SN Pro', 'sans-serif'],
                         'mono': ['SN Pro', 'monospace']
                     }
@@ -67,7 +68,7 @@
         html { scroll-behavior: smooth; }
         
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'SN Pro', sans-serif; /* ИЗМЕНЕНО: Было Inter */
             background: var(--bg);
             color: var(--fg);
             overflow-x: hidden;
@@ -980,9 +981,6 @@
         // ============================================
         // МЕНЕДЖЕР СТРАНИЦ
         // ============================================
-                // ============================================
-        // МЕНЕДЖЕР СТРАНИЦ
-        // ============================================
         const PageManager = {
             pages: {
                 'dashboard': { title: 'Главная', file: 'modal1.html' },
@@ -996,7 +994,7 @@
                 
                 AppState.currentPage = pageName;
                 
-                // Показываем индикатор загрузки
+                // Индикатор загрузки
                 content.innerHTML = `
                     <div class="flex items-center justify-center py-20 h-[calc(100vh-64px)]">
                         <div class="w-8 h-8 border-2 border-ink/20 border-t-ink rounded-full loading-spinner"></div>
@@ -1010,21 +1008,34 @@
                         const response = await fetch(pageInfo.file);
                         if (response.ok) {
                             const html = await response.text();
-                            content.innerHTML = html;
                             
-                            // !!! ВАЖНО: Исполняем скрипты внутри загруженного HTML !!!
+                            // Используем DOMParser для корректной обработки
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            // Очищаем контейнер
+                            content.innerHTML = '';
+                            
+                            // Переносим содержимое body
+                            const nodes = Array.from(doc.body.childNodes);
+                            nodes.forEach(node => content.appendChild(node));
+                            
+                            // Находим и исполняем скрипты
                             const scripts = content.querySelectorAll('script');
                             scripts.forEach(oldScript => {
                                 const newScript = document.createElement('script');
-                                if (oldScript.src) {
-                                    newScript.src = oldScript.src;
-                                } else {
-                                    // Оборачиваем в IIFE для изоляции
-                                    newScript.textContent = `(function() { ${oldScript.textContent} })();`;
+                                
+                                // Копируем атрибуты (если есть)
+                                for (const attr of oldScript.attributes) {
+                                    newScript.setAttribute(attr.name, attr.value);
                                 }
-                                document.body.appendChild(newScript);
-                                // Удаляем оригинальный скрипт из DOM, чтобы не мусорить
-                                oldScript.remove();
+                                
+                                // Устанавливаем содержимое
+                                // Важно: оборачиваем, чтобы скрипт выполнился
+                                newScript.textContent = oldScript.textContent;
+                                
+                                // Заменяем старый скрипт на новый (это запускает его)
+                                oldScript.parentNode.replaceChild(newScript, oldScript);
                             });
 
                             return;
