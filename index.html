@@ -1078,18 +1078,33 @@
             },
             
             async handleGoogleLogin() {
-                try {
-                    const { error } = await supabase.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: {
-                            redirectTo: window.location.origin + window.location.pathname
-                        }
-                    });
-                    if (error) throw error;
-                } catch (error) {
-                    Utils.showToast('Ошибка авторизации: ' + error.message, 'error');
-                }
-            },
+    try {
+        // Определяем базовый URL в зависимости от окружения
+        let redirectUrl;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Локальная разработка
+            redirectUrl = window.location.origin + window.location.pathname;
+        } else {
+            // GitHub Pages (убедитесь, что путь совпадает с названием репозитория)
+            // window.location.origin вернет https://<nick>.github.io
+            // window.location.pathname вернет /<repo-name>/index.html или /<repo-name>/
+            redirectUrl = window.location.origin + window.location.pathname;
+        }
+
+        console.log("Redirect URL:", redirectUrl); // Для отладки
+
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: redirectUrl
+            }
+        });
+        
+        if (error) throw error;
+    } catch (error) {
+        Utils.showToast('Ошибка авторизации: ' + error.message, 'error');
+    }
+},
             
             handlePinSetupInput(e) {
                 const pin = e.target.value.toUpperCase();
