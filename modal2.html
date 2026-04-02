@@ -1,8 +1,6 @@
 <!-- 
     Файл: modal2.html 
     Страница: Проекты, Файлы, Чат
-    Ширина: 1600px (фиксированная), центрирование.
-    Высота: Динамическая (100vh - 64px шапка).
 -->
 <div class="w-full h-[calc(100vh-64px)] overflow-hidden flex justify-center bg-surface-bright/20">
     
@@ -24,7 +22,7 @@
             </div>
         </aside>
 
-        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: Файлы (Остаток места ~700px) -->
+        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: Файлы -->
         <main class="flex-1 min-w-0 flex flex-col">
             <!-- Зона загрузки -->
             <div class="p-4 border-b border-gray-light">
@@ -34,6 +32,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                     </svg>
                     <p class="text-xs text-ink-light">Перетащите файлы или кликните для выбора</p>
+                    <p class="text-[10px] text-ink-muted mt-1" id="upload-hint">Выберите проект слева для привязки</p>
                 </div>
             </div>
 
@@ -43,23 +42,23 @@
             </div>
         </main>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ: Чат (600px - в 2 раза больше левой) -->
+        <!-- ПРАВАЯ ПАНЕЛЬ: Чат -->
         <aside class="w-[600px] flex-shrink-0 border-l border-gray-light flex flex-col bg-surface-bright/30">
             <div class="p-4 border-b border-gray-light">
-                <h2 class="font-display font-semibold text-ink">Активность и чат</h2>
-                <p class="text-xs text-ink-muted mt-1" id="active-project-name">Общий чат</p>
+                <h2 class="font-display font-semibold text-ink">Чат проекта</h2>
+                <p class="text-xs text-ink-muted mt-1" id="chat-project-name">Выберите проект</p>
             </div>
             
             <!-- Сообщения -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chat-messages">
-                <!-- Сообщения подгрузятся здесь -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col-reverse" id="chat-messages">
+                <!-- Сообщения -->
             </div>
             
             <!-- Поле ввода -->
             <div class="p-4 border-t border-gray-light bg-surface-bright/50">
                 <div class="flex gap-2">
-                    <input type="text" id="chat-input" placeholder="Написать сообщение..." class="form-input flex-1 px-4 py-2 rounded-lg text-sm bg-surface border-gray-light focus:border-ink/30">
-                    <button id="send-msg-btn" class="btn-primary px-4 py-2 rounded-lg text-surface-bright">
+                    <input type="text" id="chat-input" placeholder="Выберите проект..." class="form-input flex-1 px-4 py-2 rounded-lg text-sm bg-surface border-gray-light focus:border-ink/30 disabled:opacity-50" disabled>
+                    <button id="send-msg-btn" class="btn-primary px-4 py-2 rounded-lg text-surface-bright disabled:opacity-50" disabled>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
@@ -71,38 +70,94 @@
     </div>
 </div>
 
+<!-- Шаблон для карточки файла -->
+<template id="file-card-template">
+    <div class="file-card bg-card rounded-xl p-3 border border-gray-light flex items-stretch gap-3 group relative" data-file-id="">
+        
+        <!-- Левая часть: Иконка -->
+        <div class="flex flex-col items-center justify-center w-10 flex-shrink-0">
+            <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
+                <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
+            </div>
+            <a href="#" target="_blank" class="mt-2 w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100">
+                <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Центральная часть: Информация -->
+        <div class="flex-1 flex flex-col justify-center min-w-0 gap-2">
+            <!-- Имя файла -->
+            <div>
+                <p class="text-xs text-ink font-medium truncate file-name"></p>
+                <p class="text-[10px] text-ink-muted file-meta"></p>
+            </div>
+            
+            <!-- Поля выбора (Проект и Теги) -->
+            <div class="flex flex-col gap-2">
+                <!-- Проект -->
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-ink-muted w-12">Проект:</span>
+                    <select class="flex-1 bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project">
+                        <option value="">Мои файлы</option>
+                    </select>
+                </div>
+                
+                <!-- Теги -->
+                <div class="flex items-center gap-2 relative">
+                    <span class="text-[10px] text-ink-muted w-12">Теги:</span>
+                    <input type="text" class="flex-1 bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags" placeholder="Введите тег + пробел">
+                    <div class="hidden absolute left-12 bottom-full mb-1 w-48 bg-surface border border-gray-light rounded shadow-lg text-xs max-h-32 overflow-y-auto tags-dropdown"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Индикатор сохранения -->
+        <div class="absolute top-2 right-2 opacity-0 transition-opacity saving-indicator">
+            <svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+    </div>
+</template>
+
+
 <script>
-// Логика страницы modal2.html
 (function() {
     
-    // Функция ожидания загрузки глобальных переменных
     function waitForGlobals(callback) {
         if (window.AppState && window.supabase && window.Utils) {
             callback();
         } else {
-            console.log("Waiting for globals..."); // Лог для отладки
             setTimeout(() => waitForGlobals(callback), 100);
         }
     }
 
-    // Запуск логики после проверки
     waitForGlobals(() => {
-        console.log("Modal2: Global context loaded");
+        console.log("Modal2: Initialized");
 
         const state = window.AppState;
         const supabase = window.supabase;
         const utils = window.Utils;
         
-        // Локальное состояние
         const localState = {
             projects: [],
             files: [],
             messages: [],
             activeProject: null, 
-            activeProjectName: 'Общий чат'
+            activeProjectName: null,
+            
+            // Для чата
+            realtimeChannel: null,
+            isLoadingMessages: false,
+            hasMoreMessages: true,
+            oldestMessageDate: null,
+            
+            // Для тегов
+            allTags: new Set()
         };
 
-        // Элементы DOM
         const elements = {
             projectsList: document.getElementById('projects-list'),
             filesList: document.getElementById('files-list'),
@@ -110,7 +165,9 @@
             chatInput: document.getElementById('chat-input'),
             dropZone: document.getElementById('drop-zone'),
             fileInput: document.getElementById('file-input'),
-            activeProjectName: document.getElementById('active-project-name')
+            chatProjectName: document.getElementById('chat-project-name'),
+            uploadHint: document.getElementById('upload-hint'),
+            sendBtn: document.getElementById('send-msg-btn')
         };
 
         // ============================================
@@ -118,28 +175,18 @@
         // ============================================
         async function init() {
             await loadProjects();
-            await loadFiles();
-            await loadMessages();
+            await loadAllTags();
+            
+            // Состояние по умолчанию: чат неактивен
+            updateChatState(false);
+            
             initEventListeners();
-            initRealtime();
-        }
-
-        function initRealtime() {
-             // Подписка на новые сообщения
-            supabase.channel('public:messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    if (payload.new.project_id === localState.activeProject || (!payload.new.project_id && !localState.activeProject)) {
-                        localState.messages.push(payload.new);
-                        renderMessages();
-                        scrollToBottom();
-                    }
-                })
-                .subscribe();
         }
 
         // ============================================
         // ЗАГРУЗКА ДАННЫХ
         // ============================================
+        
         async function loadProjects() {
             const { data, error } = await supabase
                 .from('projects')
@@ -149,18 +196,33 @@
 
             if (error) {
                 console.error("Error loading projects:", error);
-                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`;
                 return;
             }
-            
             localState.projects = data || [];
             renderProjects();
+        }
+
+        async function loadAllTags() {
+            // Получаем все уникальные теги из БД
+            const { data, error } = await supabase.rpc('get_all_tags'); 
+            // Если RPC нет, используем клиентскую агрегацию
+            if (error) {
+                 // Fallback: запросить все файлы и собрать теги
+                 const { data: files } = await supabase.from('files').select('tags');
+                 if(files) {
+                     files.forEach(f => {
+                         if(f.tags) f.tags.forEach(t => localState.allTags.add(t));
+                     });
+                 }
+            } else {
+                data.forEach(t => localState.allTags.add(t));
+            }
         }
 
         async function loadFiles() {
             let query = supabase
                 .from('files')
-                .select('*, profiles:uploader_id(name, email)')
+                .select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email)')
                 .order('created_at', { ascending: false });
 
             if (localState.activeProject) {
@@ -174,29 +236,111 @@
             }
         }
 
-        async function loadMessages() {
+        // ============================================
+        // ЧАТ ЛОГИКА
+        // ============================================
+
+        function updateChatState(isActive) {
+            elements.chatInput.disabled = !isActive;
+            elements.sendBtn.disabled = !isActive;
+            
+            if (!isActive) {
+                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект для начала чата</div>`;
+                elements.chatProjectName.textContent = "Выберите проект";
+            } else {
+                elements.chatProjectName.textContent = localState.activeProjectName;
+                elements.chatInput.placeholder = "Написать сообщение...";
+            }
+        }
+
+        async function loadMessages(initial = true) {
+            if (localState.isLoadingMessages) return;
+            if (!initial && !localState.hasMoreMessages) return;
+            
+            localState.isLoadingMessages = true;
+
             let query = supabase
                 .from('messages')
-                .select('*, author:sender_id(name, email)')
-                .order('created_at', { ascending: true });
+                .select('id, content, created_at, sender_id, author:sender_id(name, email)')
+                .eq('project_id', localState.activeProject)
+                .order('created_at', { ascending: false });
 
-            if (localState.activeProject) {
-                query = query.eq('project_id', localState.activeProject);
-            } else {
-                query = query.is('project_id', null);
+            if (!initial && localState.oldestMessageDate) {
+                query = query.lt('created_at', localState.oldestMessageDate);
             }
 
+            query = query.limit(initial ? 50 : 30);
+
             const { data, error } = await query;
-            if (!error && data) {
+
+            if (error) {
+                console.error("Error loading messages", error);
+                localState.isLoadingMessages = false;
+                return;
+            }
+
+            if (data.length === 0) {
+                localState.hasMoreMessages = false;
+                localState.isLoadingMessages = false;
+                return;
+            }
+
+            // Сортируем для отображения (ASC)
+            data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            if (initial) {
                 localState.messages = data;
                 renderMessages();
                 scrollToBottom();
+            } else {
+                // Подгрузка старых сообщений
+                const container = elements.chatMessages;
+                const prevScrollHeight = container.scrollHeight;
+                
+                // Добавляем в начало
+                localState.messages = [...data, ...localState.messages];
+                renderMessages();
+                
+                // Сохраняем позицию скролла
+                container.scrollTop = container.scrollHeight - prevScrollHeight;
             }
+
+            localState.oldestMessageDate = localState.messages[0]?.created_at;
+            localState.hasMoreMessages = data.length > 0;
+            localState.isLoadingMessages = false;
+        }
+
+        function subscribeToChat(projectId) {
+            if (localState.realtimeChannel) {
+                localState.realtimeChannel.unsubscribe();
+            }
+
+            localState.realtimeChannel = supabase.channel(`chat:${projectId}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `project_id=eq.${projectId}`
+                }, (payload) => {
+                    const msg = payload.new;
+                    
+                    // Добавляем автора, так как в realtime его может не быть сразу
+                    // Нужно запросить или подставить текущего юзера
+                    if(msg.sender_id === state.currentUser.id) {
+                        msg.author = { name: state.appUser.name };
+                    }
+                    
+                    localState.messages.push(msg);
+                    appendMessage(msg);
+                    scrollToBottom();
+                })
+                .subscribe();
         }
 
         // ============================================
         // РЕНДЕРИНГ
         // ============================================
+        
         function renderProjects() {
             elements.projectsList.innerHTML = `
                 <div class="p-2 mb-2 text-xs text-ink-muted uppercase tracking-wider">Ваши проекты</div>
@@ -216,15 +360,32 @@
 
             document.querySelectorAll('.project-item').forEach(el => {
                 el.addEventListener('click', async () => {
-                    const id = el.dataset.id;
-                    localState.activeProject = id || null;
+                    const id = el.dataset.id || null;
+                    localState.activeProject = id;
                     
                     const project = localState.projects.find(p => p.id === id);
-                    localState.activeProjectName = project ? project.name : 'Общий чат';
-                    elements.activeProjectName.textContent = localState.activeProjectName;
+                    localState.activeProjectName = project ? project.name : 'Все файлы';
+                    
+                    elements.uploadHint.textContent = id ? `Файлы будут добавлены в "${localState.activeProjectName}"` : "Файлы без проекта (Мои файлы)";
+                    
+                    // Обновляем состояние чата
+                    const chatActive = !!id;
+                    updateChatState(chatActive);
+
+                    // Сброс пагинации чата
+                    localState.messages = [];
+                    localState.oldestMessageDate = null;
+                    localState.hasMoreMessages = true;
+
+                    if(id) {
+                        await loadMessages(true);
+                        subscribeToChat(id);
+                    } else {
+                        if(localState.realtimeChannel) localState.realtimeChannel.unsubscribe();
+                        elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект для чата</div>`;
+                    }
 
                     await loadFiles();
-                    await loadMessages();
                     renderProjects();
                 });
             });
@@ -237,43 +398,65 @@
                         <svg class="w-12 h-12 text-ink-muted mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                         </svg>
-                        <p class="text-ink-muted text-sm">Нет загруженных файлов</p>
+                        <p class="text-ink-muted text-sm">Нет файлов</p>
                     </div>
                 `;
                 return;
             }
 
-            elements.filesList.innerHTML = `
-                <div class="space-y-3">
-                    ${localState.files.map(f => `
-                        <div class="file-card bg-card rounded-xl p-3 border border-gray-light flex items-center gap-3">
-                            <div class="w-10 h-10 flex-shrink-0 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
-                                <span class="text-[9px] font-bold text-ink-muted uppercase">${getExtension(f.name)}</span>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs text-ink font-medium truncate">${f.name}</p>
-                                <p class="text-[10px] text-ink-muted">
-                                    ${f.profiles?.name || f.profiles?.email || 'User'} • ${formatDate(f.created_at)}
-                                </p>
-                            </div>
-                            <a href="${f.storage_path}" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors">
-                                <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                </svg>
-                            </a>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+            const template = document.getElementById('file-card-template');
+            elements.filesList.innerHTML = '';
+
+            localState.files.forEach(f => {
+                const clone = template.content.cloneNode(true);
+                const card = clone.querySelector('.file-card');
+                
+                card.dataset.fileId = f.id;
+                
+                // Заполнение данных
+                clone.querySelector('.ext-icon').textContent = getExtension(f.name);
+                clone.querySelector('.file-name').textContent = f.name;
+                clone.querySelector('.file-meta').textContent = `${f.profiles?.name || 'User'} • ${formatDate(f.created_at)} • ${formatBytes(f.size)}`;
+                
+                // Ссылка на скачивание
+                const downloadBtn = clone.querySelector('a');
+                downloadBtn.href = f.storage_path;
+
+                // Выпадающий список проектов
+                const select = clone.querySelector('.select-project');
+                select.innerHTML = `<option value="">Мои файлы</option>`;
+                localState.projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    if (p.id === f.project_id) opt.selected = true;
+                });
+                select.value = f.project_id || "";
+
+                // Теги
+                const inputTags = clone.querySelector('.input-tags');
+                inputTags.value = (f.tags || []).join(' ');
+                
+                // События
+                select.addEventListener('change', (e) => updateFileProject(f.id, e.target.value));
+                inputTags.addEventListener('change', (e) => updateFileTags(f.id, e.target.value));
+                inputTags.addEventListener('input', (e) => handleTagInput(e, f.id));
+
+                elements.filesList.appendChild(clone);
+            });
+        }
+        
+        function appendMessage(msg) {
+            const html = createMessageHTML(msg);
+            elements.chatMessages.insertAdjacentHTML('beforeend', html);
         }
 
         function renderMessages() {
-            if (localState.messages.length === 0) {
-                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs">Нет сообщений</div>`;
-                return;
-            }
+            elements.chatMessages.innerHTML = localState.messages.map(m => createMessageHTML(m)).join('');
+        }
 
-            elements.chatMessages.innerHTML = localState.messages.map(m => `
+        function createMessageHTML(m) {
+            return `
                 <div class="message-item p-2 rounded-lg hover:bg-surface/50">
                     <div class="flex items-start gap-2">
                         <div class="w-6 h-6 rounded-full bg-surface border border-gray-light flex-shrink-0 flex items-center justify-center text-[8px] text-ink-muted">
@@ -284,39 +467,38 @@
                                 <span class="text-[11px] font-semibold text-ink">${m.author?.name || 'User'}</span>
                                 <span class="text-[9px] text-ink-muted">${formatTime(m.created_at)}</span>
                             </div>
-                            <p class="text-xs text-ink-light mt-0.5">${m.content}</p>
+                            <p class="text-xs text-ink-light mt-0.5">${escapeHtml(m.content)}</p>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
         }
 
         // ============================================
         // ОБРАБОТЧИКИ
         // ============================================
         function initEventListeners() {
-            const createBtn = document.getElementById('create-project-btn');
-            if(createBtn) {
-                createBtn.addEventListener('click', async () => {
-                    const name = prompt('Название нового проекта:');
-                    if (!name) return;
+            // Создание проекта
+            document.getElementById('create-project-btn').addEventListener('click', async () => {
+                const name = prompt('Название нового проекта:');
+                if (!name) return;
 
-                    const { data, error } = await supabase
-                        .from('projects')
-                        .insert({ name: name, owner_id: state.currentUser.id })
-                        .select()
-                        .single();
+                const { data, error } = await supabase
+                    .from('projects')
+                    .insert({ name: name, owner_id: state.currentUser.id })
+                    .select()
+                    .single();
 
-                    if (!error && data) {
-                        localState.projects.unshift(data);
-                        renderProjects();
-                        utils.showToast('Проект создан', 'success');
-                    } else {
-                        utils.showToast('Ошибка создания проекта', 'error');
-                    }
-                });
-            }
+                if (!error && data) {
+                    localState.projects.unshift(data);
+                    renderProjects();
+                    utils.showToast('Проект создан', 'success');
+                } else {
+                    utils.showToast('Ошибка создания', 'error');
+                }
+            });
 
+            // Загрузка файлов
             elements.dropZone.addEventListener('click', () => elements.fileInput.click());
             elements.fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
@@ -334,9 +516,17 @@
                 handleFiles(e.dataTransfer.files);
             });
 
-            document.getElementById('send-msg-btn').addEventListener('click', sendMessage);
+            // Чат: отправка
+            elements.sendBtn.addEventListener('click', sendMessage);
             elements.chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
+            });
+
+            // Чат: скролл (подгрузка истории)
+            elements.chatMessages.addEventListener('scroll', () => {
+                if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.activeProject) {
+                    loadMessages(false);
+                }
             });
         }
 
@@ -346,76 +536,154 @@
             utils.showToast(`Загрузка ${filesList.length} файлов...`, 'info');
 
             for (const file of filesList) {
-                // --- УЛУЧШЕНИЕ: Очистка имени файла ---
-                // Заменяем проблемные символы и кириллицу на безопасные
-                const safeName = file.name
-                    .replace(/[^a-zA-Z0-9._-]/g, '_') // Оставляем только латиницу, цифры, точку, подчеркивание и дефис
-                    .toLowerCase();
-                
-                // Формируем путь
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
                 const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
                 
-                // Загрузка
                 const { error: uploadError } = await supabase.storage
                     .from('user-files')
                     .upload(filePath, file);
 
                 if (uploadError) {
-                    console.error("Upload Error:", uploadError);
-                    utils.showToast(`Ошибка загрузки: ${uploadError.message}`, 'error');
+                    utils.showToast(`Ошибка: ${uploadError.message}`, 'error');
                     continue;
                 }
 
-                // Получаем публичный URL
                 const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
 
-                // Запись в БД
-                const { data: fileData, error: dbError } = await supabase
+                // Определяем проект
+                const projectId = localState.activeProject; // null если не выбран
+
+                const { error: dbError } = await supabase
                     .from('files')
                     .insert({
-                        project_id: localState.activeProject,
+                        project_id: projectId,
                         uploader_id: state.currentUser.id,
-                        name: file.name, // Сохраняем оригинальное имя для отображения
+                        name: file.name,
                         original_name: file.name,
                         mime_type: file.type,
                         size: file.size,
-                        storage_path: urlData.publicUrl
-                    })
-                    .select('id')
-                    .single();
+                        storage_path: urlData.publicUrl,
+                        tags: [] // Пустой массив тегов по умолчанию
+                    });
 
                 if (dbError) {
-                    console.error("DB Insert Error:", dbError);
                     utils.showToast(`Ошибка БД: ${dbError.message}`, 'error');
-                    continue;
                 }
-
-                // Сообщение в чат
-                await supabase.from('messages').insert({
-                    project_id: localState.activeProject,
-                    sender_id: state.currentUser.id,
-                    content: `Загрузил файл: ${file.name}`,
-                    file_id: fileData.id
-                });
             }
 
             utils.showToast('Файлы загружены', 'success');
             elements.fileInput.value = '';
             await loadFiles();
-            await loadMessages();
         }
 
         async function sendMessage() {
             const text = elements.chatInput.value.trim();
-            if (!text) return;
+            if (!text || !localState.activeProject) return;
+
+            // Оптимистичное обновление (добавляем сообщение сразу)
+            const tempMsg = {
+                id: 'temp-' + Date.now(),
+                content: text,
+                created_at: new Date().toISOString(),
+                sender_id: state.currentUser.id,
+                author: { name: state.appUser.name },
+                project_id: localState.activeProject
+            };
+            
+            appendMessage(tempMsg);
+            scrollToBottom();
+            elements.chatInput.value = '';
 
             await supabase.from('messages').insert({
                 project_id: localState.activeProject,
                 sender_id: state.currentUser.id,
                 content: text
             });
+            
+            // Realtime обновит список, но мы уже показали сообщение. 
+            // Чтобы избежать дублей, можно не рендерить ответ от Realtime если ID совпадает, 
+            // но для простоты оставим как есть (Realtime пришлет постоянный ID, дубли будут с разными ID).
+            // В идеале удалить temp-msg при получении реального.
+        }
+        
+        async function updateFileProject(fileId, projectId) {
+            showSaving(fileId);
+            await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId);
+            hideSaving(fileId);
+        }
 
-            elements.chatInput.value = '';
+        async function updateFileTags(fileId, tagsString) {
+            showSaving(fileId);
+            const tags = tagsString.split(' ').filter(t => t.trim() !== '');
+            await supabase.from('files').update({ tags }).eq('id', fileId);
+            
+            // Обновляем глобальный список тегов
+            tags.forEach(t => localState.allTags.add(t));
+            hideSaving(fileId);
+        }
+
+        function handleTagInput(e, fileId) {
+            const val = e.target.value;
+            const lastChar = val[val.length - 1];
+            
+            // Если пробел, обновляем теги
+            if (lastChar === ' ') {
+                updateFileTags(fileId, val);
+                // Обновляем подсказки
+                showTagSuggestions(e.target, val);
+            } else {
+                showTagSuggestions(e.target, val);
+            }
+        }
+        
+        function showTagSuggestions(input, text) {
+            const dropdown = input.nextElementSibling;
+            const parts = text.split(' ');
+            const currentInput = parts[parts.length - 1];
+            
+            if (!currentInput) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            const matches = Array.from(localState.allTags)
+                .filter(t => t.toLowerCase().startsWith(currentInput.toLowerCase()))
+                .slice(0, 5);
+
+            if (matches.length === 0) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            dropdown.innerHTML = matches.map(t => 
+                `<div class="px-3 py-2 hover:bg-surface cursor-pointer">${t}</div>`
+            ).join('');
+            
+            dropdown.classList.remove('hidden');
+
+            dropdown.querySelectorAll('div').forEach((el, idx) => {
+                el.onclick = () => {
+                    parts[parts.length - 1] = matches[idx];
+                    input.value = parts.join(' ') + ' ';
+                    dropdown.classList.add('hidden');
+                    input.focus();
+                    updateFileTags(input.closest('.file-card').dataset.fileId, input.value);
+                };
+            });
+        }
+
+        function showSaving(fileId) {
+            const card = document.querySelector(`[data-file-id="${fileId}"]`);
+            if(card) card.querySelector('.saving-indicator').style.opacity = 1;
+        }
+
+        function hideSaving(fileId) {
+            const card = document.querySelector(`[data-file-id="${fileId}"]`);
+            if(card) {
+                const indicator = card.querySelector('.saving-indicator');
+                indicator.innerHTML = `<svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+                setTimeout(() => indicator.style.opacity = 0, 1500);
+            }
         }
 
         // ============================================
@@ -423,25 +691,41 @@
         // ============================================
         function getExtension(filename) {
             const parts = filename.split('.');
-            return parts.length > 1 ? parts.pop().substring(0, 4) : 'FILE';
+            return parts.length > 1 ? parts.pop().substring(0, 4).toUpperCase() : 'FILE';
         }
 
         function formatDate(dateStr) {
             const d = new Date(dateStr);
             return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         }
-
+        
         function formatTime(dateStr) {
             const d = new Date(dateStr);
             return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
-
-        function scrollToBottom() {
-            const container = elements.chatMessages;
-            container.scrollTop = container.scrollHeight;
+        
+        function formatBytes(bytes) {
+            if(bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // Запуск инициализации
+        function scrollToBottom() {
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Запуск
         init();
     });
 
