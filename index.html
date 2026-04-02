@@ -684,7 +684,7 @@
             <!-- Основной контент -->
             <main id="main-content" class="pt-16 min-h-screen">
                 <!-- Контент загружается динамически -->
-                <div id="page-content" class="p-4 lg:p-6">
+                <div id="page-content">
                     <!-- Placeholder для динамического контента -->
                 </div>
             </main>
@@ -974,6 +974,9 @@
         // ============================================
         // МЕНЕДЖЕР СТРАНИЦ
         // ============================================
+                // ============================================
+        // МЕНЕДЖЕР СТРАНИЦ
+        // ============================================
         const PageManager = {
             pages: {
                 'dashboard': { title: 'Главная', file: 'modal1.html' },
@@ -987,13 +990,13 @@
                 
                 AppState.currentPage = pageName;
                 
+                // Показываем индикатор загрузки
                 content.innerHTML = `
-                    <div class="flex items-center justify-center py-20">
+                    <div class="flex items-center justify-center py-20 h-[calc(100vh-64px)]">
                         <div class="w-8 h-8 border-2 border-ink/20 border-t-ink rounded-full loading-spinner"></div>
                     </div>
                 `;
                 
-                // Пытаемся загрузить внешний файл
                 const pageInfo = this.pages[pageName];
                 
                 if (pageInfo) {
@@ -1002,22 +1005,36 @@
                         if (response.ok) {
                             const html = await response.text();
                             content.innerHTML = html;
-                            content.classList.add('fade-in');
+                            
+                            // !!! ВАЖНО: Исполняем скрипты внутри загруженного HTML !!!
+                            const scripts = content.querySelectorAll('script');
+                            scripts.forEach(oldScript => {
+                                const newScript = document.createElement('script');
+                                if (oldScript.src) {
+                                    newScript.src = oldScript.src;
+                                } else {
+                                    // Оборачиваем в IIFE для изоляции
+                                    newScript.textContent = `(function() { ${oldScript.textContent} })();`;
+                                }
+                                document.body.appendChild(newScript);
+                                // Удаляем оригинальный скрипт из DOM, чтобы не мусорить
+                                oldScript.remove();
+                            });
+
                             return;
                         }
                     } catch (e) {
-                        console.log('External page not found, showing placeholder');
+                        console.error('Page load error:', e);
                     }
                 }
                 
-                // Заглушка, если файл не найден
+                // Заглушка
                 content.innerHTML = `
-                    <div class="max-w-7xl mx-auto p-6 text-center">
+                    <div class="max-w-7xl mx-auto p-6 text-center h-[calc(100vh-64px)] flex flex-col justify-center">
                         <h1 class="text-2xl font-light text-ink mb-4">Страница в данный момент в разработке</h1>
                         <p class="text-ink-muted">Контент для страницы «${pageName}» скоро появится.</p>
                     </div>
                 `;
-                content.classList.add('fade-in');
             }
         };
 
