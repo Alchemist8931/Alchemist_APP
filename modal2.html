@@ -346,24 +346,36 @@
             utils.showToast(`Загрузка ${filesList.length} файлов...`, 'info');
 
             for (const file of filesList) {
-                const filePath = `${state.currentUser.id}/${Date.now()}_${file.name}`;
+                // --- УЛУЧШЕНИЕ: Очистка имени файла ---
+                // Заменяем проблемные символы и кириллицу на безопасные
+                const safeName = file.name
+                    .replace(/[^a-zA-Z0-9._-]/g, '_') // Оставляем только латиницу, цифры, точку, подчеркивание и дефис
+                    .toLowerCase();
+                
+                // Формируем путь
+                const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
+                
+                // Загрузка
                 const { error: uploadError } = await supabase.storage
                     .from('user-files')
                     .upload(filePath, file);
 
                 if (uploadError) {
-                    utils.showToast(`Ошибка загрузки ${file.name}`, 'error');
+                    console.error("Upload Error:", uploadError);
+                    utils.showToast(`Ошибка загрузки: ${uploadError.message}`, 'error');
                     continue;
                 }
 
+                // Получаем публичный URL
                 const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
 
+                // Запись в БД
                 const { data: fileData, error: dbError } = await supabase
                     .from('files')
                     .insert({
                         project_id: localState.activeProject,
                         uploader_id: state.currentUser.id,
-                        name: file.name,
+                        name: file.name, // Сохраняем оригинальное имя для отображения
                         original_name: file.name,
                         mime_type: file.type,
                         size: file.size,
@@ -373,10 +385,12 @@
                     .single();
 
                 if (dbError) {
-                    console.error(dbError);
+                    console.error("DB Insert Error:", dbError);
+                    utils.showToast(`Ошибка БД: ${dbError.message}`, 'error');
                     continue;
                 }
 
+                // Сообщение в чат
                 await supabase.from('messages').insert({
                     project_id: localState.activeProject,
                     sender_id: state.currentUser.id,
