@@ -36,7 +36,7 @@
                 </div>
             </div>
 
-            <!-- Список файлов: Добавлен класс space-y-5 для отступа 20px -->
+            <!-- Список файлов (отступ 20px между карточками - space-y-5) -->
             <div class="flex-1 overflow-y-auto p-4 space-y-5" id="files-list">
                 <!-- Файлы подгрузятся здесь -->
             </div>
@@ -76,43 +76,44 @@
 
 <!-- Шаблон для карточки файла -->
 <template id="file-card-template">
-    <div class="file-card bg-card rounded-xl p-3 border border-gray-light flex items-start gap-3 group relative" data-file-id="">
+    <div class="file-card bg-card rounded-xl p-3 border border-gray-light flex flex-col gap-2 group relative" data-file-id="">
         
-        <!-- Левая часть: Иконка (выравнивание сверху) -->
-        <div class="flex flex-col items-center flex-shrink-0 pt-1">
-            <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
-                <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
+        <!-- Верхний блок: Иконка + Поля ввода + Кнопка -->
+        <div class="flex items-start gap-3">
+            
+            <!-- Левая часть: Иконка -->
+            <div class="flex-shrink-0 pt-1">
+                <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
+                    <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
+                </div>
             </div>
-        </div>
 
-        <!-- Центральная часть: Информация -->
-        <div class="flex-1 flex flex-col min-w-0 gap-2">
-            <!-- Строка 1: Название -->
-            <p class="text-xs text-ink font-medium truncate file-name"></p>
-            
-            <!-- Строка 2: Мета -->
-            <p class="text-[10px] text-ink-muted file-meta"></p>
-            
-            <!-- Строки 3-4: Поля ввода (шириной 250px) без подписей -->
-            <div class="flex flex-col gap-2 w-[250px] mt-1">
-                <select class="bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
+            <!-- Центральная часть: Поля ввода (в одну строку с иконкой, друг над другом) -->
+            <div class="flex flex-col gap-2 w-[250px]">
+                <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
                     <option value="">Мои файлы</option>
                 </select>
                 
-                <div class="relative">
+                <div class="relative w-full">
                     <input type="text" class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags font-sans tracking-normal" placeholder="Тег + пробел">
                     <div class="hidden absolute left-0 bottom-full mb-1 w-48 bg-surface border border-gray-light rounded shadow-lg text-xs max-h-32 overflow-y-auto z-10 tags-dropdown"></div>
                 </div>
             </div>
+
+            <!-- Правая часть: Кнопка скачивания (в конце карточки) -->
+            <div class="flex-shrink-0 pt-1 ml-auto">
+                <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors">
+                    <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                </a>
+            </div>
         </div>
 
-        <!-- Правая часть: Кнопка скачивания (в конце карточки, сверху) -->
-        <div class="flex-shrink-0 pt-1">
-            <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors">
-                <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-            </a>
+        <!-- Нижний блок: Название и Мета-данные -->
+        <div class="min-w-0 pl-0.5">
+            <p class="text-xs text-ink font-medium truncate file-name"></p>
+            <p class="text-[10px] text-ink-muted file-meta"></p>
         </div>
 
         <!-- Индикатор сохранения -->
@@ -331,9 +332,7 @@
                     msg.author = { name: state.appUser.name };
                 }
                 
-                // Добавляем в состояние
                 localState.messages.push(msg);
-                // Рендерим и скроллим
                 appendMessage(msg);
                 scrollToBottom();
             });
@@ -444,8 +443,7 @@
         }
         
         function appendMessage(msg) {
-            // Удаляем временное сообщение, если оно есть (по совпадению контента и времени с точностью до секунды)
-            // Это предотвратит дублирование при получении Realtime события
+            // Удаляем временное сообщение, если пришло реальное
             const tempMessages = elements.chatMessages.querySelectorAll('.temp-message');
             tempMessages.forEach(el => el.remove());
 
@@ -580,10 +578,8 @@
             utils.showToast('Файлы загружены', 'success');
             elements.fileInput.value = '';
             
-            // Гарантированное обновление списка файлов
+            // Обновляем список и скроллим вверх
             await loadFiles();
-            
-            // Прокрутка вверх, так как новые файлы вверху списка
             elements.filesList.scrollTop = 0;
         }
 
@@ -591,7 +587,6 @@
             const text = elements.chatInput.value.trim();
             if (!text || !localState.activeProject) return;
 
-            // Создаем временное сообщение
             const tempId = 'temp-' + Date.now();
             const tempMsg = {
                 id: tempId,
@@ -602,14 +597,12 @@
                 project_id: localState.activeProject
             };
             
-            // Добавляем в DOM и скроллим
             appendMessage(tempMsg);
             scrollToBottom();
             
             elements.chatInput.value = '';
             elements.chatInput.style.height = 'auto';
 
-            // Отправляем на сервер
             const { error } = await supabase.from('messages').insert({
                 project_id: localState.activeProject,
                 sender_id: state.currentUser.id,
@@ -618,12 +611,9 @@
             
             if(error) {
                 utils.showToast("Ошибка отправки", "error");
-                // Если ошибка, можно удалить temp сообщение из DOM
                 const tempEl = document.getElementById(tempId);
                 if(tempEl) tempEl.remove();
             }
-            // При успехе Realtime сработает и добавит постоянное сообщение, 
-            // наш appendMessage автоматически удалит temp class если он есть или мы удалим его выше.
         }
         
         async function updateFileProject(fileId, projectId) {
