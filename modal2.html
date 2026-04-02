@@ -80,6 +80,7 @@
         if (window.AppState && window.supabase && window.Utils) {
             callback();
         } else {
+            console.log("Waiting for globals..."); // Лог для отладки
             setTimeout(() => waitForGlobals(callback), 100);
         }
     }
