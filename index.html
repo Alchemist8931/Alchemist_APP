@@ -22,7 +22,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=SN+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -38,8 +38,8 @@
                         'surface-bright': '#0D0D0D',
                     },
                     fontFamily: {
-                        'display': ['Inter', 'sans-serif'],
-                        'mono': ['Inter', 'monospace']
+                        'display': ['SN Pro', 'sans-serif'],
+                        'mono': ['SN Pro', 'monospace']
                     }
                 }
             }
@@ -603,9 +603,7 @@
                     <!-- Навигация (десктоп) -->
                     <nav class="hidden lg:flex items-center gap-8">
                         <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors active" data-page="dashboard">Главная</a>
-                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="files">Файлы</a>
                         <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="projects">Проекты</a>
-                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="chat">Чаты</a>
                         <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="settings">Настройки</a>
                     </nav>
                     
@@ -666,23 +664,11 @@
                             </svg>
                             Главная
                         </a>
-                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="files">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                            </svg>
-                            Файлы
-                        </a>
                         <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="projects">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
                             Проекты
-                        </a>
-                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="chat">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                            Чаты
                         </a>
                         <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="settings">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -989,6 +975,12 @@
         // МЕНЕДЖЕР СТРАНИЦ
         // ============================================
         const PageManager = {
+            pages: {
+                'dashboard': { title: 'Главная', file: 'modal1.html' },
+                'projects': { title: 'Проекты', file: 'modal2.html' },
+                'settings': { title: 'Настройки', file: 'modal3.html' }
+            },
+            
             async loadPage(pageName) {
                 const content = document.getElementById('page-content');
                 if (!content) return;
@@ -1001,33 +993,31 @@
                     </div>
                 `;
                 
-                try {
-                    const pageIndex = ['dashboard', 'files', 'projects', 'chat', 'settings'].indexOf(pageName);
-                    if (pageIndex !== -1) {
-                        const response = await fetch(`modal${pageIndex + 1}.html`);
+                // Пытаемся загрузить внешний файл
+                const pageInfo = this.pages[pageName];
+                
+                if (pageInfo) {
+                    try {
+                        const response = await fetch(pageInfo.file);
                         if (response.ok) {
                             const html = await response.text();
                             content.innerHTML = html;
                             content.classList.add('fade-in');
                             return;
                         }
+                    } catch (e) {
+                        console.log('External page not found, showing placeholder');
                     }
-                } catch (e) {
-                    console.log('External page not found, showing placeholder');
                 }
                 
-                content.innerHTML = this.getPlaceholder(pageName);
-                content.classList.add('fade-in');
-            },
-            
-            getPlaceholder(pageName) {
-                // Сокращенная версия для читаемости, логика та же что и в полном коде
-                 return `
-                    <div class="max-w-7xl mx-auto p-6">
-                        <h1 class="text-2xl font-light mb-4">Страница: ${pageName}</h1>
-                        <p class="text-ink-muted">Контент страницы загружается из modal*.html</p>
+                // Заглушка, если файл не найден
+                content.innerHTML = `
+                    <div class="max-w-7xl mx-auto p-6 text-center">
+                        <h1 class="text-2xl font-light text-ink mb-4">Страница в данный момент в разработке</h1>
+                        <p class="text-ink-muted">Контент для страницы «${pageName}» скоро появится.</p>
                     </div>
-                 `;
+                `;
+                content.classList.add('fade-in');
             }
         };
 
