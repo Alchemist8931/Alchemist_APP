@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudVault — Персональное облако</title>
+    <meta name="description" content="Безопасное персональное облачное хранилище с чатами по проектам">
+    <meta name="theme-color" content="#0D0D0D">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ink': '#E5E5E5',
+                        'ink-light': '#A3A3A3',
+                        'ink-muted': '#737373',
+                        'gray-mid': '#525252',
+                        'gray-light': '#262626',
+                        'surface': '#161616',
+                        'surface-bright': '#0D0D0D',
+                    },
+                    fontFamily: {
+                        'display': ['Inter', 'sans-serif'],
+                        'mono': ['Inter', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --bg: #0D0D0D;
+            --bg-secondary: #161616;
+            --bg-tertiary: #1A1A1A;
+            --fg: #E5E5E5;
+            --fg-secondary: #A3A3A3;
+            --fg-muted: #737373;
+            --muted: #525252;
+            --card: #1A1A1A;
+            --border: #262626;
+            --border-light: #1F1F1F;
+            --success: #22C55E;
+            --error: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        .dark-bg {
+            background: 
+                radial-gradient(ellipse 100% 60% at 50% -30%, rgba(229, 229, 229, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 50% at 100% 50%, rgba(229, 229, 229, 0.02) 0%, transparent 40%),
+                linear-gradient(180deg, #0D0D0D 0%, #0A0A0A 50%, #0D0D0D 100%);
+        }
+
+        .blueprint-grid {
+            background-image: 
+                linear-gradient(rgba(229, 229, 229, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(229, 229, 229, 0.02) 1px, transparent 1px),
+                linear-gradient(rgba(229, 229, 229, 0.01) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(229, 229, 229, 0.01) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 25px 25px, 25px 25px;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+
+        .btn-primary {
+            position: relative;
+            background: linear-gradient(135deg, rgba(229, 229, 229, 0.95) 0%, rgba(200, 200, 200, 1) 100%);
+            border: 1px solid rgba(229, 229, 229, 1);
+            color: #0D0D0D;
+            transition: all 0.35s ease;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(229, 229, 229, 1) 100%);
+            box-shadow: 0 8px 25px -8px rgba(229, 229, 229, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(26, 26, 26, 0.9);
+            border: 1px solid rgba(38, 38, 38, 0.8);
+            color: var(--fg);
+            transition: all 0.35s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(229, 229, 229, 0.2);
+            background: rgba(38, 38, 38, 1);
+        }
+
+        .btn-google {
+            background: rgba(26, 26, 26, 0.9);
+            border: 1px solid rgba(38, 38, 38, 0.8);
+            color: var(--fg);
+            transition: all 0.35s ease;
+        }
+
+        .btn-google:hover {
+            border-color: rgba(229, 229, 229, 0.3);
+            background: rgba(38, 38, 38, 1);
+        }
+
+        .form-input {
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(38, 38, 38, 0.9);
+            color: var(--fg);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Inter', monospace;
+            letter-spacing: 0.15em;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(229, 229, 229, 0.3);
+            box-shadow: 0 0 0 3px rgba(229, 229, 229, 0.05);
+        }
+
+        .form-input::placeholder { 
+            color: rgba(115, 115, 115, 0.6);
+            letter-spacing: 0.05em;
+        }
+
+        .corner-mark {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: rgba(229, 229, 229, 0.12);
+            border-style: solid;
+        }
+
+        .corner-mark-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+        .corner-mark-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+        .corner-mark-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+        .corner-mark-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+        .status-pulse {
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(229, 229, 229, 0.08), transparent);
+            animation: scanMove 8s linear infinite;
+        }
+
+        @keyframes scanMove {
+            0% { top: 0; opacity: 0; }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .pin-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid rgba(229, 229, 229, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .pin-dot.filled {
+            background: var(--fg);
+            border-color: var(--fg);
+        }
+
+        .pin-dot.error {
+            border-color: var(--error);
+            background: var(--error);
+            animation: pinShake 0.4s ease;
+        }
+
+        @keyframes pinShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--fg);
+            transition: width 0.3s ease;
+        }
+
+        .nav-item:hover::after,
+        .nav-item.active::after {
+            width: 100%;
+        }
+
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            background: rgba(229, 229, 229, 0.05);
+            border-color: rgba(229, 229, 229, 0.15);
+        }
+
+        .file-card {
+            transition: all 0.3s ease;
+        }
+
+        .file-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(229, 229, 229, 0.15);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .notification-badge {
+            animation: notificationPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes notificationPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="antialiased dark-bg">
+    <div id="particles-container" class="fixed inset-0 pointer-events-none z-0" aria-hidden="true"></div>
+    
+    <!-- Главный контейнер приложения -->
+    <div id="app">
+        <!-- Экран загрузки -->
+        <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-surface-bright">
+            <div class="text-center">
+                <div class="w-16 h-16 border-2 border-ink/20 border-t-ink rounded-full loading-spinner mx-auto mb-6"></div>
+                <p class="text-ink-muted text-sm tracking-wider uppercase">Проверка авторизации</p>
+            </div>
+        </div>
+
+        <!-- Экран авторизации (показывается если не авторизован) -->
+        <div id="auth-screen" class="hidden fixed inset-0 z-40">
+            <div class="scan-line"></div>
+            <div class="absolute inset-0 blueprint-grid opacity-50"></div>
+            
+            <div class="relative z-10 min-h-screen flex items-center justify-center px-4">
+                <div class="w-full max-w-md">
+                    <!-- Логотип -->
+                    <div class="text-center mb-12 reveal">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-gray-light mb-6">
+                            <svg class="w-8 h-8 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                            </svg>
+                        </div>
+                        <h1 class="font-display text-3xl font-light text-ink mb-2">CloudVault</h1>
+                        <p class="text-ink-muted text-sm tracking-wide">Персональное облачное хранилище</p>
+                    </div>
+
+                    <!-- Карточка авторизации -->
+                    <div id="auth-card" class="reveal delay-1">
+                        <!-- Состояние: Вход через Google -->
+                        <div id="google-auth-view" class="bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
+                            <div class="corner-mark corner-mark-tl"></div>
+                            <div class="corner-mark corner-mark-tr"></div>
+                            <div class="corner-mark corner-mark-bl"></div>
+                            <div class="corner-mark corner-mark-br"></div>
+                            
+                            <div class="text-center mb-8">
+                                <h2 class="font-display text-xl font-semibold text-ink mb-2">Вход в систему</h2>
+                                <p class="text-ink-muted text-sm">Авторизуйтесь через Google аккаунт</p>
+                            </div>
+                            
+                            <button id="google-login-btn" class="btn-google w-full py-4 rounded-xl font-medium flex items-center justify-center gap-3 text-base">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                Войти через Google
+                            </button>
+                            
+                            <div class="mt-6 pt-6 border-t border-gray-light/50">
+                                <p class="text-ink-muted text-xs text-center">
+                                    Регистрация новых пользователей требует активации администратором
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Состояние: Установка PIN (для новых пользователей) -->
+                        <div id="setup-pin-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
+                            <div class="corner-mark corner-mark-tl"></div>
+                            <div class="corner-mark corner-mark-tr"></div>
+                            <div class="corner-mark corner-mark-bl"></div>
+                            <div class="corner-mark corner-mark-br"></div>
+                            
+                            <div class="text-center mb-8">
+                                <div class="w-16 h-16 rounded-full bg-surface border border-gray-light mx-auto mb-4 overflow-hidden" id="user-avatar-setup">
+                                    <svg class="w-full h-full text-ink-muted p-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="font-display text-xl font-semibold text-ink mb-2">Создайте PIN-код</h2>
+                                <p class="text-ink-muted text-sm" id="user-email-display">email@example.com</p>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-xs text-ink-muted mb-3 tracking-wide text-center">
+                                    PIN-код (10 символов: A-Z, a-z, 0-9, символы)
+                                </label>
+                                <input type="text" id="pin-setup-input" 
+                                       class="form-input w-full px-4 py-4 rounded-xl text-center text-lg tracking-widest"
+                                       maxlength="10"
+                                       placeholder="_ _ _ _ _ _ _ _ _ _"
+                                       autocomplete="off"
+                                       spellcheck="false">
+                                
+                                <!-- Индикатор силы PIN -->
+                                <div class="mt-3">
+                                    <div class="flex gap-1 mb-2">
+                                        <div class="h-1 flex-1 rounded-full bg-gray-light" id="strength-1"></div>
+                                        <div class="h-1 flex-1 rounded-full bg-gray-light" id="strength-2"></div>
+                                        <div class="h-1 flex-1 rounded-full bg-gray-light" id="strength-3"></div>
+                                        <div class="h-1 flex-1 rounded-full bg-gray-light" id="strength-4"></div>
+                                    </div>
+                                    <p class="text-xs text-center" id="strength-text">Введите PIN-код</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-xs text-ink-muted mb-3 tracking-wide text-center">
+                                    Подтвердите PIN-код
+                                </label>
+                                <input type="text" id="pin-confirm-input" 
+                                       class="form-input w-full px-4 py-4 rounded-xl text-center text-lg tracking-widest"
+                                       maxlength="10"
+                                       placeholder="_ _ _ _ _ _ _ _ _ _"
+                                       autocomplete="off"
+                                       spellcheck="false">
+                            </div>
+                            
+                            <button id="save-pin-btn" class="btn-primary w-full py-4 rounded-xl font-medium text-surface-bright text-base" disabled>
+                                Сохранить PIN-код
+                            </button>
+                        </div>
+
+                        <!-- Состояние: Ввод PIN (для существующих пользователей) -->
+                        <div id="enter-pin-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
+                            <div class="corner-mark corner-mark-tl"></div>
+                            <div class="corner-mark corner-mark-tr"></div>
+                            <div class="corner-mark corner-mark-bl"></div>
+                            <div class="corner-mark corner-mark-br"></div>
+                            
+                            <div class="text-center mb-8">
+                                <div class="w-16 h-16 rounded-full bg-surface border border-gray-light mx-auto mb-4 overflow-hidden" id="user-avatar-login">
+                                    <svg class="w-full h-full text-ink-muted p-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="font-display text-xl font-semibold text-ink mb-2">Введите PIN-код</h2>
+                                <p class="text-ink-muted text-sm" id="user-email-login">email@example.com</p>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <input type="password" id="pin-login-input" 
+                                       class="form-input w-full px-4 py-4 rounded-xl text-center text-lg tracking-widest"
+                                       maxlength="10"
+                                       placeholder="_ _ _ _ _ _ _ _ _ _"
+                                       autocomplete="off"
+                                       spellcheck="false">
+                                
+                                <!-- Индикатор ввода -->
+                                <div class="flex justify-center gap-2 mt-4" id="pin-dots">
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                    <div class="pin-dot"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="pin-error" class="hidden text-center mb-4">
+                                <p class="text-red-500 text-sm">Неверный PIN-код</p>
+                            </div>
+                            
+                            <button id="login-pin-btn" class="btn-primary w-full py-4 rounded-xl font-medium text-surface-bright text-base" disabled>
+                                Войти
+                            </button>
+                            
+                            <button id="logout-btn" class="mt-4 w-full py-3 text-ink-muted text-sm hover:text-ink transition-colors">
+                                Выйти из аккаунта
+                            </button>
+                        </div>
+
+                        <!-- Состояние: Ожидание активации -->
+                        <div id="pending-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
+                            <div class="corner-mark corner-mark-tl"></div>
+                            <div class="corner-mark corner-mark-tr"></div>
+                            <div class="corner-mark corner-mark-bl"></div>
+                            <div class="corner-mark corner-mark-br"></div>
+                            
+                            <div class="text-center">
+                                <div class="w-16 h-16 rounded-full bg-surface border border-gray-light mx-auto mb-4 overflow-hidden" id="user-avatar-pending">
+                                    <svg class="w-full h-full text-ink-muted p-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="font-display text-xl font-semibold text-ink mb-2">Ожидание активации</h2>
+                                <p class="text-ink-muted text-sm mb-6" id="user-email-pending">email@example.com</p>
+                                
+                                <div class="bg-surface rounded-xl p-6 mb-6">
+                                    <div class="flex items-center justify-center gap-3 mb-4">
+                                        <div class="w-3 h-3 rounded-full bg-yellow-500/80 status-pulse"></div>
+                                        <span class="text-ink-light text-sm">Аккаунт на модерации</span>
+                                    </div>
+                                    <p class="text-ink-muted text-xs leading-relaxed">
+                                        Ваш аккаунт ожидает активации администратором. 
+                                        Вы получите уведомление когда доступ будет предоставлен.
+                                    </p>
+                                </div>
+                                
+                                <button id="check-status-btn" class="btn-secondary w-full py-3 rounded-xl font-medium text-sm mb-3">
+                                    Проверить статус
+                                </button>
+                                
+                                <button id="logout-pending-btn" class="w-full py-3 text-ink-muted text-sm hover:text-ink transition-colors">
+                                    Выйти
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Состояние: Заблокирован -->
+                        <div id="locked-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
+                            <div class="corner-mark corner-mark-tl"></div>
+                            <div class="corner-mark corner-mark-tr"></div>
+                            <div class="corner-mark corner-mark-bl"></div>
+                            <div class="corner-mark corner-mark-br"></div>
+                            
+                            <div class="text-center">
+                                <div class="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 mx-auto mb-4 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                                <h2 class="font-display text-xl font-semibold text-ink mb-2">Слишком много попыток</h2>
+                                <p class="text-ink-muted text-sm mb-6" id="locked-message">
+                                    Попробуйте снова через 15 минут
+                                </p>
+                                
+                                <button id="logout-locked-btn" class="btn-secondary w-full py-3 rounded-xl font-medium text-sm">
+                                    Выйти
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Информация о безопасности -->
+                    <div class="mt-8 text-center reveal delay-2">
+                        <div class="inline-flex items-center gap-2 text-ink-muted text-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Защищённое соединение с шифрованием
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основной интерфейс (показывается после авторизации) -->
+        <div id="main-screen" class="hidden">
+            <!-- Header -->
+            <header id="header" class="fixed top-0 left-0 right-0 z-30 bg-surface-bright/95 border-b border-gray-light/50 backdrop-blur-sm">
+                <div class="flex items-center justify-between h-16 px-4 lg:px-6">
+                    <!-- Логотип и меню (мобильное) -->
+                    <div class="flex items-center gap-4">
+                        <button id="mobile-menu-btn" class="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl border border-gray-light hover:border-ink/20 transition-colors">
+                            <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                        
+                        <a href="#" class="flex items-center gap-2">
+                            <div class="w-9 h-9 rounded-xl bg-surface border border-gray-light flex items-center justify-center">
+                                <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                                </svg>
+                            </div>
+                            <span class="font-display font-semibold text-ink hidden sm:block">CloudVault</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Навигация (десктоп) -->
+                    <nav class="hidden lg:flex items-center gap-8">
+                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors active" data-page="dashboard">Главная</a>
+                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="files">Файлы</a>
+                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="projects">Проекты</a>
+                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="chat">Чаты</a>
+                        <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="settings">Настройки</a>
+                    </nav>
+                    
+                    <!-- Профиль -->
+                    <div class="flex items-center gap-3">
+                        <!-- Уведомления -->
+                        <button class="relative w-10 h-10 rounded-xl border border-gray-light hover:border-ink/20 transition-colors flex items-center justify-center">
+                            <svg class="w-5 h-5 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <span class="absolute -top-1 -right-1 w-4 h-4 bg-ink text-surface-bright text-xs rounded-full flex items-center justify-center notification-badge">2</span>
+                        </button>
+                        
+                        <!-- Профиль -->
+                        <div class="relative" id="profile-dropdown-container">
+                            <button id="profile-btn" class="flex items-center gap-2 py-2 px-3 rounded-xl border border-gray-light hover:border-ink/20 transition-colors">
+                                <div class="w-7 h-7 rounded-lg overflow-hidden bg-surface" id="header-avatar">
+                                    <img src="" alt="Avatar" class="w-full h-full object-cover">
+                                </div>
+                                <span class="text-sm text-ink hidden sm:block" id="header-name">User</span>
+                                <svg class="w-4 h-4 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Выпадающее меню -->
+                            <div id="profile-dropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-card rounded-xl border border-gray-light shadow-xl shadow-black/20 py-2 z-50">
+                                <div class="px-4 py-3 border-b border-gray-light">
+                                    <p class="text-sm text-ink font-medium" id="dropdown-name">User Name</p>
+                                    <p class="text-xs text-ink-muted" id="dropdown-email">email@example.com</p>
+                                </div>
+                                <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm text-ink-light hover:text-ink hover:bg-surface transition-colors" data-page="settings">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Настройки
+                                </a>
+                                <button id="logout-main-btn" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-surface transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Выйти
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Sidebar (мобильное меню) -->
+            <aside id="sidebar" class="sidebar fixed left-0 top-16 bottom-0 w-64 bg-surface-bright border-r border-gray-light/50 z-20 lg:hidden overflow-y-auto">
+                <nav class="p-4">
+                    <div class="space-y-1">
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors active" data-page="dashboard">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            Главная
+                        </a>
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="files">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                            </svg>
+                            Файлы
+                        </a>
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="projects">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                            Проекты
+                        </a>
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="chat">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Чаты
+                        </a>
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent text-ink-light hover:text-ink transition-colors" data-page="settings">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Настройки
+                        </a>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Основной контент -->
+            <main id="main-content" class="pt-16 min-h-screen">
+                <!-- Контент загружается динамически -->
+                <div id="page-content" class="p-4 lg:p-6">
+                    <!-- Placeholder для динамического контента -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast уведомления -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <script type="module">
+        // ============================================
+        // КОНФИГУРАЦИЯ SUPABASE
+        // ============================================
+        // ЗАМЕНИТЕ НА СВОИ ДАННЫЕ!
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ============================================
+        // СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+        // ============================================
+        const AppState = {
+            currentUser: null,
+            appUser: null,
+            currentPage: 'dashboard',
+            isAuthenticated: false,
+            isPinSet: false,
+            isLoading: true
+        };
+
+        // ============================================
+        // КРИПТОГРАФИЯ
+        // ============================================
+        const Crypto = {
+            // Генерация случайной соли
+            generateSalt() {
+                const array = new Uint8Array(16);
+                crypto.getRandomValues(array);
+                return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+            },
+            
+            // Хеширование PIN с солью
+            async hashPin(pin, salt) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(pin + salt);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+            
+            // Проверка силы PIN
+            checkPinStrength(pin) {
+                let score = 0;
+                if (pin.length >= 10) score++;
+                if (/[a-z]/.test(pin)) score++;
+                if (/[A-Z]/.test(pin)) score++;
+                if (/[0-9]/.test(pin)) score++;
+                if (/[^a-zA-Z0-9]/.test(pin)) score++;
+                return Math.min(score, 4);
+            }
+        };
+
+        // ============================================
+        // УТИЛИТЫ
+        // ============================================
+        const Utils = {
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `px-4 py-3 rounded-xl border text-sm fade-in flex items-center gap-3 min-w-[280px]`;
+                
+                const colors = {
+                    success: 'bg-green-500/10 border-green-500/20 text-green-400',
+                    error: 'bg-red-500/10 border-red-500/20 text-red-400',
+                    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
+                    info: 'bg-surface border-gray-light text-ink'
+                };
+                
+                const icons = {
+                    success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>',
+                    error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>',
+                    warning: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+                    info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                };
+                
+                toast.classList.add(...colors[type].split(' '));
+                toast.innerHTML = `${icons[type]}<span>${message}</span>`;
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(20px)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            },
+            
+            formatDate(date) {
+                return new Intl.DateTimeFormat('ru-RU', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).format(new Date(date));
+            },
+            
+            formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            },
+            
+            validatePin(pin) {
+                if (pin.length !== 10) return false;
+                return /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]+$/.test(pin);
+            }
+        };
+
+        // ============================================
+        // API
+        // ============================================
+        const API = {
+            async getAppUser(userId) {
+                const { data, error } = await supabase
+                    .from('app_users')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+                
+                if (error) throw error;
+                return data;
+            },
+            
+            async updatePin(userId, pinHash, salt) {
+                const { error } = await supabase
+                    .from('app_users')
+                    .update({ 
+                        pin_hash: pinHash, 
+                        pin_salt: salt,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+                
+                if (error) throw error;
+            },
+            
+            async updateLastLogin(userId) {
+                const { error } = await supabase.rpc('update_last_login', { 
+                    p_user_id: userId 
+                });
+                if (error) console.error('Failed to update last login:', error);
+            },
+            
+            async checkUserActive(userId) {
+                const { data, error } = await supabase.rpc('check_user_active', { 
+                    p_user_id: userId 
+                });
+                if (error) throw error;
+                return data;
+            }
+        };
+
+        // ============================================
+        // UI КОМПОНЕНТЫ
+        // ============================================
+        const UI = {
+            showScreen(screenId) {
+                ['loading-screen', 'auth-screen', 'main-screen'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const target = document.getElementById(screenId);
+                if (target) target.classList.remove('hidden');
+            },
+            
+            showAuthView(viewId) {
+                ['google-auth-view', 'setup-pin-view', 'enter-pin-view', 'pending-view', 'locked-view'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const target = document.getElementById(viewId);
+                if (target) target.classList.remove('hidden');
+            },
+            
+            updatePinDots(length) {
+                const dots = document.querySelectorAll('#pin-dots .pin-dot');
+                dots.forEach((dot, i) => {
+                    dot.classList.remove('filled', 'error');
+                    if (i < length) dot.classList.add('filled');
+                });
+            },
+            
+            updateStrengthIndicator(strength) {
+                const bars = [
+                    document.getElementById('strength-1'),
+                    document.getElementById('strength-2'),
+                    document.getElementById('strength-3'),
+                    document.getElementById('strength-4')
+                ];
+                const text = document.getElementById('strength-text');
+                
+                const colors = ['#EF4444', '#F59E0B', '#22C55E', '#22C55E'];
+                const labels = ['Слабый', 'Средний', 'Хороший', 'Отличный'];
+                
+                bars.forEach((bar, i) => {
+                    if (i < strength) {
+                        bar.style.background = colors[strength - 1];
+                    } else {
+                        bar.style.background = '#262626';
+                    }
+                });
+                
+                text.textContent = strength > 0 ? labels[strength - 1] : 'Введите PIN-код';
+                text.style.color = strength > 0 ? colors[strength - 1] : '#737373';
+            },
+            
+            setUserInfo(user, appUser) {
+                const name = appUser?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+                const email = user?.email || appUser?.email || '';
+                const avatar = appUser?.avatar_url || user?.user_metadata?.avatar_url || '';
+                
+                // Обновляем все места где отображается пользователь
+                const updateElement = (id, value, isImg = false) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (isImg) {
+                            el.src = value || '';
+                            el.style.display = value ? 'block' : 'none';
+                        } else {
+                            el.textContent = value;
+                        }
+                    }
+                };
+                
+                updateElement('user-email-display', email);
+                updateElement('user-email-login', email);
+                updateElement('user-email-pending', email);
+                updateElement('header-name', name);
+                updateElement('dropdown-name', name);
+                updateElement('dropdown-email', email);
+                
+                // Аватары
+                ['user-avatar-setup', 'user-avatar-login', 'user-avatar-pending', 'header-avatar'].forEach(id => {
+                    const container = document.getElementById(id);
+                    if (container) {
+                        if (avatar) {
+                            container.innerHTML = `<img src="${avatar}" alt="Avatar" class="w-full h-full object-cover">`;
+                        }
+                    }
+                });
+            },
+            
+            toggleDropdown(show) {
+                const dropdown = document.getElementById('profile-dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('hidden', !show);
+                }
+            }
+        };
+
+        // ============================================
+        // МЕНЕДЖЕР СТРАНИЦ
+        // ============================================
+        const PageManager = {
+            pages: {
+                dashboard: {
+                    title: 'Главная',
+                    icon: 'home'
+                },
+                files: {
+                    title: 'Файлы',
+                    icon: 'folder'
+                },
+                projects: {
+                    title: 'Проекты',
+                    icon: 'projects'
+                },
+                chat: {
+                    title: 'Чаты',
+                    icon: 'chat'
+                },
+                settings: {
+                    title: 'Настройки',
+                    icon: 'settings'
+                }
+            },
+            
+            async loadPage(pageName) {
+                const content = document.getElementById('page-content');
+                if (!content) return;
+                
+                AppState.currentPage = pageName;
+                
+                // Показываем индикатор загрузки
+                content.innerHTML = `
+                    <div class="flex items-center justify-center py-20">
+                        <div class="w-8 h-8 border-2 border-ink/20 border-t-ink rounded-full loading-spinner"></div>
+                    </div>
+                `;
+                
+                // Пытаемся загрузить внешний файл
+                try {
+                    const response = await fetch(`modal${Object.keys(this.pages).indexOf(pageName) + 1}.html`);
+                    if (response.ok) {
+                        const html = await response.text();
+                        content.innerHTML = html;
+                        content.classList.add('fade-in');
+                        return;
+                    }
+                } catch (e) {
+                    console.log('External page not found, showing placeholder');
+                }
+                
+                // Показываем заглушку
+                content.innerHTML = this.getPlaceholder(pageName);
+                content.classList.add('fade-in');
+            },
+            
+            getPlaceholder(pageName) {
+                const page = this.pages[pageName];
+                const placeholders = {
+                    dashboard: `
+                        <div class="max-w-7xl mx-auto">
+                            <div class="mb-8">
+                                <h1 class="font-display text-2xl lg:text-3xl font-light text-ink mb-2">Добро пожаловать</h1>
+                                <p class="text-ink-muted">Обзор вашего облачного хранилища</p>
+                            </div>
+                            
+                            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                                <div class="bg-card rounded-xl p-6 border border-gray-light">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-ink-muted text-sm">Файлы</span>
+                                    </div>
+                                    <p class="font-display text-3xl font-semibold text-ink">0</p>
+                                </div>
+                                <div class="bg-card rounded-xl p-6 border border-gray-light">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-ink-muted text-sm">Проекты</span>
+                                    </div>
+                                    <p class="font-display text-3xl font-semibold text-ink">0</p>
+                                </div>
+                                <div class="bg-card rounded-xl p-6 border border-gray-light">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-ink-muted text-sm">Сообщения</span>
+                                    </div>
+                                    <p class="font-display text-3xl font-semibold text-ink">0</p>
+                                </div>
+                                <div class="bg-card rounded-xl p-6 border border-gray-light">
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-ink-muted text-sm">Использовано</span>
+                                    </div>
+                                    <p class="font-display text-3xl font-semibold text-ink">0 B</p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid lg:grid-cols-2 gap-6">
+                                <div class="bg-card rounded-xl p-6 border border-gray-light">
+                                    <h2 class="font-display text-lg font-semibold text-ink mb-4">Последние файлы</h2>
+                                    <div class="text-center py-8">
+                                        <svg class="w-12 h-12 text-ink-muted mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                        </svg>
+                                        <p class="text-ink-muted text-sm">Нет загруженных файлов</p>
+                                    </div>
+                                </div>
+                                <div class="bg-card rounded-xl p-6 border border-gray-light">
+                                    <h2 class="font-display text-lg font-semibold text-ink mb-4">Активность</h2>
+                                    <div class="text-center py-8">
+                                        <svg class="w-12 h-12 text-ink-muted mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <p class="text-ink-muted text-sm">Нет недавней активности</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    files: `
+                        <div class="max-w-7xl mx-auto">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                                <div>
+                                    <h1 class="font-display text-2xl lg:text-3xl font-light text-ink mb-2">Файлы</h1>
+                                    <p class="text-ink-muted">Управление вашими файлами</p>
+                                </div>
+                                <button class="btn-primary px-6 py-3 rounded-xl font-medium text-surface-bright flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                    </svg>
+                                    Загрузить файл
+                                </button>
+                            </div>
+                            
+                            <div class="bg-card rounded-xl border border-gray-light overflow-hidden">
+                                <div class="p-4 border-b border-gray-light flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <input type="text" placeholder="Поиск файлов..." class="bg-surface border border-gray-light rounded-lg px-4 py-2 text-sm text-ink w-64 focus:outline-none focus:border-ink/30">
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button class="p-2 rounded-lg border border-gray-light hover:border-ink/20 transition-colors">
+                                            <svg class="w-5 h-5 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                            </svg>
+                                        </button>
+                                        <button class="p-2 rounded-lg border border-gray-light hover:border-ink/20 transition-colors">
+                                            <svg class="w-5 h-5 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-8 text-center">
+                                    <svg class="w-16 h-16 text-ink-muted mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                                    </svg>
+                                    <p class="text-ink-muted mb-4">Перетащите файлы сюда или нажмите "Загрузить файл"</p>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    projects: `
+                        <div class="max-w-7xl mx-auto">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                                <div>
+                                    <h1 class="font-display text-2xl lg:text-3xl font-light text-ink mb-2">Проекты</h1>
+                                    <p class="text-ink-muted">Управление проектами</p>
+                                </div>
+                                <button class="btn-primary px-6 py-3 rounded-xl font-medium text-surface-bright flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Новый проект
+                                </button>
+                            </div>
+                            
+                            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="bg-card rounded-xl p-6 border border-gray-light border-dashed flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-ink/30 transition-colors">
+                                    <svg class="w-10 h-10 text-ink-muted mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    <span class="text-ink-muted text-sm">Создать проект</span>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    chat: `
+                        <div class="max-w-7xl mx-auto">
+                            <div class="mb-8">
+                                <h1 class="font-display text-2xl lg:text-3xl font-light text-ink mb-2">Чаты</h1>
+                                <p class="text-ink-muted">Обсуждения по проектам</p>
+                            </div>
+                            
+                            <div class="bg-card rounded-xl border border-gray-light overflow-hidden h-[600px] flex">
+                                <div class="w-80 border-r border-gray-light flex flex-col">
+                                    <div class="p-4 border-b border-gray-light">
+                                        <input type="text" placeholder="Поиск чатов..." class="w-full bg-surface border border-gray-light rounded-lg px-4 py-2 text-sm text-ink focus:outline-none focus:border-ink/30">
+                                    </div>
+                                    <div class="flex-1 flex items-center justify-center">
+                                        <div class="text-center p-4">
+                                            <svg class="w-12 h-12 text-ink-muted mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                            </svg>
+                                            <p class="text-ink-muted text-sm">Нет активных чатов</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 flex items-center justify-center">
+                                    <div class="text-center">
+                                        <p class="text-ink-muted">Выберите чат для начала общения</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    settings: `
+                        <div class="max-w-3xl mx-auto">
+                            <div class="mb-8">
+                                <h1 class="font-display text-2xl lg:text-3xl font-light text-ink mb-2">Настройки</h1>
+                                <p class="text-ink-muted">Управление аккаунтом</p>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="bg-card rounded-xl border border-gray-light overflow-hidden">
+                                    <div class="p-6 border-b border-gray-light">
+                                        <h2 class="font-display text-lg font-semibold text-ink">Профиль</h2>
+                                    </div>
+                                    <div class="p-6">
+                                        <div class="flex items-center gap-4 mb-6">
+                                            <div class="w-16 h-16 rounded-xl bg-surface border border-gray-light overflow-hidden">
+                                                <img src="" alt="Avatar" class="w-full h-full object-cover" id="settings-avatar">
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-ink" id="settings-name">User Name</p>
+                                                <p class="text-ink-muted text-sm" id="settings-email">email@example.com</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-ink-muted text-sm">Данные профиля берутся из Google аккаунта</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-card rounded-xl border border-gray-light overflow-hidden">
+                                    <div class="p-6 border-b border-gray-light">
+                                        <h2 class="font-display text-lg font-semibold text-ink">Безопасность</h2>
+                                    </div>
+                                    <div class="p-6">
+                                        <button id="change-pin-btn" class="btn-secondary px-6 py-3 rounded-xl font-medium text-sm flex items-center gap-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                            </svg>
+                                            Изменить PIN-код
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-card rounded-xl border border-gray-light overflow-hidden">
+                                    <div class="p-6 border-b border-gray-light">
+                                        <h2 class="font-display text-lg font-semibold text-ink">Уведомления</h2>
+                                    </div>
+                                    <div class="p-6">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-ink text-sm">Push-уведомления</p>
+                                                <p class="text-ink-muted text-xs">Получать уведомления о новых сообщениях</p>
+                                            </div>
+                                            <button id="notifications-toggle" class="w-12 h-6 rounded-full bg-gray-light relative transition-colors">
+                                                <div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-ink-muted transition-transform"></div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `
+                };
+                
+                return placeholders[pageName] || '<p>Страница не найдена</p>';
+            }
+        };
+
+        // ============================================
+        // ОБРАБОТЧИКИ СОБЫТИЙ
+        // ============================================
+        const EventHandlers = {
+            init() {
+                // Google Login
+                document.getElementById('google-login-btn')?.addEventListener('click', this.handleGoogleLogin);
+                
+                // PIN Setup
+                document.getElementById('pin-setup-input')?.addEventListener('input', this.handlePinSetupInput);
+                document.getElementById('pin-confirm-input')?.addEventListener('input', this.handlePinConfirmInput);
+                document.getElementById('save-pin-btn')?.addEventListener('click', this.handleSavePin);
+                
+                // PIN Login
+                document.getElementById('pin-login-input')?.addEventListener('input', this.handlePinLoginInput);
+                document.getElementById('login-pin-btn')?.addEventListener('click', this.handlePinLogin);
+                document.getElementById('logout-btn')?.addEventListener('click', this.handleLogout);
+                
+                // Pending/Locked states
+                document.getElementById('check-status-btn')?.addEventListener('click', this.handleCheckStatus);
+                document.getElementById('logout-pending-btn')?.addEventListener('click', this.handleLogout);
+                document.getElementById('logout-locked-btn')?.addEventListener('click', this.handleLogout);
+                document.getElementById('logout-main-btn')?.addEventListener('click', this.handleLogout);
+                
+                // Navigation
+                document.querySelectorAll('[data-page]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const page = e.currentTarget.dataset.page;
+                        PageManager.loadPage(page);
+                        
+                        // Update active state
+                        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                        document.querySelectorAll('.sidebar-item').forEach(n => n.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        
+                        // Close mobile menu
+                        document.getElementById('sidebar')?.classList.remove('open');
+                    });
+                });
+                
+                // Mobile menu
+                document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+                    document.getElementById('sidebar')?.classList.toggle('open');
+                });
+                
+                // Profile dropdown
+                document.getElementById('profile-btn')?.addEventListener('click', () => {
+                    UI.toggleDropdown(document.getElementById('profile-dropdown')?.classList.contains('hidden'));
+                });
+                
+                // Close dropdown on outside click
+                document.addEventListener('click', (e) => {
+                    const container = document.getElementById('profile-dropdown-container');
+                    if (!container?.contains(e.target)) {
+                        UI.toggleDropdown(false);
+                    }
+                });
+            },
+            
+            async handleGoogleLogin() {
+                try {
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: window.location.origin + window.location.pathname
+                        }
+                    });
+                    
+                    if (error) throw error;
+                } catch (error) {
+                    Utils.showToast('Ошибка авторизации: ' + error.message, 'error');
+                }
+            },
+            
+            handlePinSetupInput(e) {
+                const pin = e.target.value.toUpperCase();
+                e.target.value = pin;
+                
+                const strength = Crypto.checkPinStrength(pin);
+                UI.updateStrengthIndicator(strength);
+                
+                this.checkPinMatch();
+            },
+            
+            handlePinConfirmInput(e) {
+                e.target.value = e.target.value.toUpperCase();
+                this.checkPinMatch();
+            },
+            
+            checkPinMatch() {
+                const pin = document.getElementById('pin-setup-input')?.value || '';
+                const confirm = document.getElementById('pin-confirm-input')?.value || '';
+                const btn = document.getElementById('save-pin-btn');
+                
+                const isValid = pin.length === 10 && pin === confirm && Utils.validatePin(pin);
+                if (btn) btn.disabled = !isValid;
+            },
+            
+            async handleSavePin() {
+                const pin = document.getElementById('pin-setup-input')?.value || '';
+                const confirm = document.getElementById('pin-confirm-input')?.value || '';
+                
+                if (pin !== confirm) {
+                    Utils.showToast('PIN-коды не совпадают', 'error');
+                    return;
+                }
+                
+                if (!Utils.validatePin(pin)) {
+                    Utils.showToast('PIN-код должен содержать 10 символов (A-Z, a-z, 0-9, символы)', 'error');
+                    return;
+                }
+                
+                try {
+                    const btn = document.getElementById('save-pin-btn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="w-5 h-5 border-2 border-surface-bright/20 border-t-surface-bright rounded-full loading-spinner"></div>';
+                    }
+                    
+                    const salt = Crypto.generateSalt();
+                    const pinHash = await Crypto.hashPin(pin, salt);
+                    
+                    await API.updatePin(AppState.currentUser.id, pinHash, salt);
+                    AppState.appUser.pin_hash = pinHash;
+                    AppState.appUser.pin_salt = salt;
+                    
+                    Utils.showToast('PIN-код успешно установлен', 'success');
+                    
+                    // Проверяем активацию
+                    const isActive = await API.checkUserActive(AppState.currentUser.id);
+                    if (isActive) {
+                        AppState.isAuthenticated = true;
+                        UI.showScreen('main-screen');
+                        PageManager.loadPage('dashboard');
+                    } else {
+                        UI.showAuthView('pending-view');
+                    }
+                } catch (error) {
+                    Utils.showToast('Ошибка сохранения PIN: ' + error.message, 'error');
+                    const btn = document.getElementById('save-pin-btn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Сохранить PIN-код';
+                    }
+                }
+            },
+            
+            handlePinLoginInput(e) {
+                const pin = e.target.value.toUpperCase();
+                e.target.value = pin;
+                
+                UI.updatePinDots(pin.length);
+                
+                const btn = document.getElementById('login-pin-btn');
+                if (btn) btn.disabled = pin.length !== 10;
+                
+                // Auto-submit when complete
+                if (pin.length === 10) {
+                    this.handlePinLogin();
+                }
+            },
+            
+            async handlePinLogin() {
+                const pin = document.getElementById('pin-login-input')?.value || '';
+                
+                if (pin.length !== 10) return;
+                
+                try {
+                    const btn = document.getElementById('login-pin-btn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<div class="w-5 h-5 border-2 border-surface-bright/20 border-t-surface-bright rounded-full loading-spinner"></div>';
+                    }
+                    
+                    // Проверяем PIN
+                    const pinHash = await Crypto.hashPin(pin, AppState.appUser.pin_salt);
+                    
+                    if (pinHash !== AppState.appUser.pin_hash) {
+                        // Ошибка
+                        const dots = document.querySelectorAll('#pin-dots .pin-dot');
+                        dots.forEach(dot => dot.classList.add('error'));
+                        
+                        document.getElementById('pin-error')?.classList.remove('hidden');
+                        document.getElementById('pin-login-input').value = '';
+                        
+                        setTimeout(() => {
+                            dots.forEach(dot => dot.classList.remove('error', 'filled'));
+                            document.getElementById('pin-error')?.classList.add('hidden');
+                        }, 500);
+                        
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.textContent = 'Войти';
+                        }
+                        return;
+                    }
+                    
+                    // Успешный вход
+                    await API.updateLastLogin(AppState.currentUser.id);
+                    AppState.isAuthenticated = true;
+                    
+                    Utils.showToast('Добро пожаловать!', 'success');
+                    UI.showScreen('main-screen');
+                    PageManager.loadPage('dashboard');
+                    
+                } catch (error) {
+                    Utils.showToast('Ошибка входа: ' + error.message, 'error');
+                    const btn = document.getElementById('login-pin-btn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Войти';
+                    }
+                }
+            },
+            
+            async handleCheckStatus() {
+                try {
+                    const isActive = await API.checkUserActive(AppState.currentUser.id);
+                    if (isActive) {
+                        Utils.showToast('Аккаунт активирован!', 'success');
+                        if (AppState.appUser.pin_hash) {
+                            UI.showAuthView('enter-pin-view');
+                        } else {
+                            UI.showAuthView('setup-pin-view');
+                        }
+                    } else {
+                        Utils.showToast('Аккаунт всё ещё на модерации', 'warning');
+                    }
+                } catch (error) {
+                    Utils.showToast('Ошибка проверки: ' + error.message, 'error');
+                }
+            },
+            
+            async handleLogout() {
+                try {
+                    await supabase.auth.signOut();
+                    AppState.currentUser = null;
+                    AppState.appUser = null;
+                    AppState.isAuthenticated = false;
+                    
+                    // Сброс UI
+                    document.getElementById('pin-setup-input').value = '';
+                    document.getElementById('pin-confirm-input').value = '';
+                    document.getElementById('pin-login-input').value = '';
+                    
+                    UI.showAuthView('google-auth-view');
+                    UI.showScreen('auth-screen');
+                    
+                    Utils.showToast('Вы вышли из системы', 'info');
+                } catch (error) {
+                    Utils.showToast('Ошибка выхода: ' + error.message, 'error');
+                }
+            }
+        };
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
+        async function initApp() {
+            try {
+                // Проверяем текущую сессию
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) throw error;
+                
+                if (!session?.user) {
+                    // Не авторизован
+                    AppState.isLoading = false;
+                    UI.showScreen('auth-screen');
+                    UI.showAuthView('google-auth-view');
+                    initRevealAnimations();
+                    EventHandlers.init();
+                    return;
+                }
+                
+                AppState.currentUser = session.user;
+                
+                // Получаем данные пользователя из нашей таблицы
+                try {
+                    AppState.appUser = await API.getAppUser(session.user.id);
+                } catch (e) {
+                    // Пользователь не найден в таблице - ждём создания триггером
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    AppState.appUser = await API.getAppUser(session.user.id);
+                }
+                
+                UI.setUserInfo(session.user, AppState.appUser);
+                
+                // Проверяем активацию
+                const isActive = await API.checkUserActive(session.user.id);
+                
+                if (!isActive) {
+                    UI.showScreen('auth-screen');
+                    UI.showAuthView('pending-view');
+                    initRevealAnimations();
+                    EventHandlers.init();
+                    return;
+                }
+                
+                // Проверяем наличие PIN
+                if (!AppState.appUser.pin_hash) {
+                    UI.showScreen('auth-screen');
+                    UI.showAuthView('setup-pin-view');
+                    initRevealAnimations();
+                    EventHandlers.init();
+                    return;
+                }
+                
+                // Требуется ввод PIN
+                UI.showScreen('auth-screen');
+                UI.showAuthView('enter-pin-view');
+                initRevealAnimations();
+                EventHandlers.init();
+                
+            } catch (error) {
+                console.error('Init error:', error);
+                AppState.isLoading = false;
+                UI.showScreen('auth-screen');
+                UI.showAuthView('google-auth-view');
+                Utils.showToast('Ошибка инициализации', 'error');
+            }
+        }
+        
+        // Анимации появления
+        function initRevealAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        }
+        
+        // Слушаем изменения авторизации
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                // Обрабатываем возврат от OAuth
+                window.location.reload();
+            }
+        });
+        
+        // Запуск
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            initParticles();
+        });
+        
+        // Частицы для фона
+        function initParticles() {
+            const container = document.getElementById('particles-container');
+            if (!container) return;
+            
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'absolute w-1 h-1 bg-ink rounded-full opacity-0';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animation = `particleFloat ${15 + Math.random() * 10}s ease-in-out infinite`;
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                container.appendChild(particle);
+            }
+        }
+        
+        // Добавляем стиль анимации частиц
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes particleFloat {
+                0%, 100% { opacity: 0.05; transform: translate(0, 0); }
+                25% { opacity: 0.15; transform: translate(20px, -15px); }
+                50% { opacity: 0.08; transform: translate(-15px, 20px); }
+                75% { opacity: 0.12; transform: translate(15px, 10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
