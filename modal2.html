@@ -457,11 +457,10 @@
                 });
                 select.value = f.project_id || "";
 
-                // Tags Logic - Passing fileId to handlers
+                // Tags Logic
                 const tagsContainer = clone.querySelector('.tags-container');
                 const tagsInput = clone.querySelector('.tag-input');
                 
-                // Initial Render of Tags
                 renderFileTags(tagsContainer, f.id);
 
                 // Delete Button
@@ -471,7 +470,7 @@
                     delBtn.addEventListener('click', () => handleDeleteFile(f.id, f.storage_path, f.name));
                 }
 
-                // Project Select Change
+                // Listeners
                 select.addEventListener('change', (e) => updateFileProject(f.id, e.target.value));
                 
                 // Tag Input Keydown
@@ -486,9 +485,7 @@
                     }
                 });
 
-                // Click on container focuses input
                 tagsContainer.addEventListener('click', (e) => {
-                    // Focus input only if not clicking remove button
                     if (!e.target.classList.contains('tag-chip-remove')) {
                         tagsInput.focus();
                     }
@@ -498,17 +495,14 @@
             });
         }
 
-        // NEW: Render tags for a specific file
         function renderFileTags(container, fileId) {
             const file = localState.files.find(f => f.id === fileId);
             if (!file) return;
 
             const tags = file.tags || [];
             
-            // Remove old chips
             container.querySelectorAll('.tag-chip').forEach(el => el.remove());
             
-            // Create chips before input
             const input = container.querySelector('.tag-input');
             
             tags.forEach(tag => {
@@ -518,7 +512,6 @@
                 
                 container.insertBefore(chip, input);
                 
-                // Add remove listener
                 chip.querySelector('.tag-chip-remove').addEventListener('click', (e) => {
                     e.stopPropagation();
                     handleRemoveTag(fileId, tag, container);
@@ -526,27 +519,22 @@
             });
         }
 
-        // NEW: Handle adding tag
         async function handleAddTag(fileId, tagName, container) {
             const file = localState.files.find(f => f.id === fileId);
             if (!file) return;
 
             const currentTags = file.tags || [];
             
-            // Avoid duplicates
             if (currentTags.includes(tagName)) return;
 
             const newTags = [...currentTags, tagName];
 
-            // Optimistic UI update
             file.tags = newTags;
             renderFileTags(container, fileId);
 
-            // DB Update
             await updateFileTags(fileId, newTags);
         }
 
-        // NEW: Handle removing tag
         async function handleRemoveTag(fileId, tagName, container) {
             const file = localState.files.find(f => f.id === fileId);
             if (!file) return;
@@ -554,11 +542,9 @@
             const currentTags = file.tags || [];
             const newTags = currentTags.filter(t => t !== tagName);
 
-            // Optimistic UI update
             file.tags = newTags;
             renderFileTags(container, fileId);
 
-            // DB Update
             await updateFileTags(fileId, newTags);
         }
         
@@ -583,15 +569,22 @@
 
         async function updateFileProject(fileId, projectId) {
             const { error } = await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId);
-            if (error) utils.showToast("Ошибка обновления проекта", "error");
+            if (error) {
+                console.error("Update Project Error:", error);
+                utils.showToast("Ошибка обновления проекта (нет прав)", "error");
+            }
         }
 
         async function updateFileTags(fileId, tags) {
-            const { error } = await supabase.from('files').update({ tags }).eq('id', fileId);
+            console.log("Updating tags for file:", fileId, "Tags:", tags);
+            
+            const { data, error } = await supabase.from('files').update({ tags }).eq('id', fileId).select();
+            
             if(error) {
-                utils.showToast("Ошибка сохранения тегов", "error");
+                console.error("Update Tags Error:", error);
+                utils.showToast(`Ошибка сохранения тегов: ${error.message}`, "error");
             } else {
-                // Update local state to ensure consistency
+                console.log("Tags updated successfully:", data);
                 const file = localState.files.find(f => f.id === fileId);
                 if(file) file.tags = tags;
             }
