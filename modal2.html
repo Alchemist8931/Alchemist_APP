@@ -149,7 +149,6 @@
             fileRefreshInterval: null, knownAuthors: {}
         };
 
-        // Кэшируем текущего пользователя
         if (state.currentUser && state.appUser) {
             localState.knownAuthors[state.currentUser.id] = state.appUser.name || state.currentUser.email;
         }
@@ -169,21 +168,27 @@
         };
 
         async function init() {
-            // ВАЖНО: Очистка "зомби-каналов" от предыдущих загрузок страницы
-            try {
-                const allChannels = supabase.realtime.channels;
-                // Копируем массив, так как будем удалять элементы
-                const channelsToRemove = [...allChannels].filter(ch => ch.topic.startsWith('chat:'));
-                for (const ch of channelsToRemove) {
-                    try { await supabase.removeChannel(ch); } catch(e) { console.warn("Zombie cleanup error", e); }
-                }
-            } catch(e) { console.warn("Cleanup failed", e); }
-
+            // Глобальная очистка всех чат-каналов при старте
+            await cleanupAllChatChannels();
+            
             await loadProjects();
             await loadAllTags();
             await loadFiles();
             updateChatState(false);
             initEventListeners();
+        }
+
+        // Функция глобальной очистки каналов
+        async function cleanupAllChatChannels() {
+            try {
+                // Получаем список всех каналов из клиента
+                const channels = supabase.realtime.channels;
+                // Фильтруем только чаты и удаляем
+                const chatChannels = [...channels].filter(ch => ch.topic.startsWith('chat:'));
+                for (const ch of chatChannels) {
+                    try { await supabase.removeChannel(ch); } catch(e) { console.warn("Cleanup error", e); }
+                }
+            } catch(e) { console.warn("Cleanup failed", e); }
         }
 
         async function loadProjects() {
@@ -248,22 +253,28 @@
         // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ
         async function subscribeToChat(projectId) {
             const myProjectId = projectId;
+            const channelName = `chat:${myProjectId}`;
 
-            // 1. Очистка текущего канала, если есть
-            if (localState.realtimeChannel) {
-                try { await localState.realtimeChannel.unsubscribe(); } catch(e) {}
-                try { await supabase.removeChannel(localState.realtimeChannel); } catch(e) {}
-                localState.realtimeChannel = null;
+            // 1. КРИТИЧЕСКИ ВАЖНО: Находим и удаляем ЛЮБОЙ канал с таким именем из глобального списка Supabase
+            // Это решает проблему "зомби-каналов", когда подписка вроде есть, но событий нет.
+            const allChannels = supabase.realtime.channels;
+            const existingChannels = [...allChannels].filter(c => c.topic === channelName);
+            
+            for (const ch of existingChannels) {
+                try { await supabase.removeChannel(ch); } catch(e) { console.warn("Remove existing error", e); }
             }
             
-            // Небольшая пауза, чтобы клиент успел обновить состояние
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Сбрасываем локальную ссылку
+            localState.realtimeChannel = null;
 
-            // Проверка актуальности (если пользователь успел переключить проект)
+            // Пауза для синхронизации SDK
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Проверка актуальности
             if (localState.activeProject !== myProjectId) return;
 
             // 2. Создаем канал
-            const channel = supabase.channel(`chat:${myProjectId}`);
+            const channel = supabase.channel(channelName);
 
             // 3. Регистрируем обработчик ДО подписки
             channel.on('postgres_changes', {
@@ -276,12 +287,11 @@
 
                 // ИСПРАВЛЕНИЕ ДУБЛИРОВАНИЯ:
                 // Если сообщение от текущего пользователя, игнорируем его.
-                // Мы уже добавили его "оптимистично" в функции sendMessage.
                 if (msg.sender_id === state.currentUser.id) {
                     return;
                 }
 
-                // Для остальных сообщений - обновляем UI
+                // Обновляем UI для чужих сообщений
                 if (!localState.knownAuthors[msg.sender_id]) {
                      const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
                      localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
@@ -296,11 +306,10 @@
             // 4. Подписываемся
             try {
                 await channel.subscribe();
-                // Двойная проверка актуальности после асинхронного ожидания
                 if (localState.activeProject === myProjectId) {
                     localState.realtimeChannel = channel;
+                    console.log(`Subscribed to ${channelName}`);
                 } else {
-                    // Если за время подписки проект сменился, сразу отписываемся
                     channel.unsubscribe();
                 }
             } catch(e) {
@@ -475,23 +484,16 @@
             
             elements.chatInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
             elements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-            elements.sendBtn.addEventListener('click', sendMessage);
+            elements.sendBtn.addEventListener('click', sendMessage)
             elements.chatMessages.addEventListener('scroll', async () => { if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false); });
         }
 
-        // FILE UPLOAD WITH PROGRESS
         async function handleFiles(filesList) {
             if (!filesList.length) return;
-
-            const MAX_FILE_SIZE = 49 * 1024 * 1024; // 49 MB
+            const MAX_FILE_SIZE = 49 * 1024 * 1024;
             const validFiles = [];
             const tooLargeFiles = [];
-
-            Array.from(filesList).forEach(file => {
-                if (file.size > MAX_FILE_SIZE) tooLargeFiles.push(file.name);
-                else validFiles.push(file);
-            });
-
+            Array.from(filesList).forEach(file => { if (file.size > MAX_FILE_SIZE) tooLargeFiles.push(file.name); else validFiles.push(file); });
             if (tooLargeFiles.length > 0) utils.showToast(`Файлы > 49МБ нельзя загрузить: ${tooLargeFiles.join(', ')}`, 'error');
             if (validFiles.length === 0) return;
 
@@ -507,14 +509,12 @@
             
             elements.uploadCount.textContent = `0 из ${validFiles.length}`;
             elements.uploadModal.classList.remove('hidden');
-
             let completedCount = 0;
 
             for (const file of validFiles) {
                 const itemEl = elements.uploadList.querySelector(`[data-name="${file.name}"]`);
                 const progressFill = itemEl.querySelector('.upload-progress-fill');
                 const progressText = itemEl.querySelector('.progress-text');
-
                 progressText.textContent = "Загрузка...";
                 const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
                 const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
@@ -556,8 +556,10 @@
 
         async function sendMessage() {
             const text = elements.chatInput.value.trim(); if (!text || !localState.activeProject) return;
+            // Оптимистичное обновление (показываем сообщение сразу)
             appendMessage({ id: 'temp-' + Date.now(), content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name } });
             scrollToBottom(); elements.chatInput.value = ''; elements.chatInput.style.height = 'auto';
+            // Отправка в БД
             await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
         }
         
