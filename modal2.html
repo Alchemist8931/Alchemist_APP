@@ -147,7 +147,8 @@
             projects: [], files: [], messages: [], activeProject: null, activeProjectOwner: null, activeProjectName: null,
             isSuperAdmin: state.appUser?.is_super_admin || false, realtimeChannel: null, isLoadingMessages: false,
             hasMoreMessages: true, oldestMessageDate: null, allTags: new Set(), confirmCallback: null,
-            fileRefreshInterval: null, knownAuthors: {}
+            fileRefreshInterval: null, knownAuthors: {},
+            isSubscribing: false // Флаг блокировки для предотвращения двойной подписки
         };
 
         // Кэшируем текущего пользователя
@@ -166,10 +167,7 @@
             createModalInput: document.getElementById('new-project-name-input'), deleteProjectSection: document.getElementById('delete-project-section'),
             confirmModal: document.getElementById('confirm-modal'), confirmModalMsg: document.getElementById('confirm-modal-message'),
             confirmModalOk: document.getElementById('confirm-modal-ok'), confirmModalCancel: document.getElementById('confirm-modal-cancel'),
-            // Элементы модального окна загрузки
-            uploadModal: document.getElementById('upload-modal'),
-            uploadList: document.getElementById('upload-list'),
-            uploadCount: document.getElementById('upload-count')
+            uploadModal: document.getElementById('upload-modal'), uploadList: document.getElementById('upload-list'), uploadCount: document.getElementById('upload-count')
         };
 
         async function init() {
@@ -236,20 +234,80 @@
             localState.isLoadingMessages = false;
         }
 
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ
         async function subscribeToChat(projectId) {
-            if (localState.realtimeChannel) { try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) {} localState.realtimeChannel = null; }
-            await new Promise(resolve => setTimeout(resolve, 100));
-            const channel = supabase.channel(`chat:${projectId}`);
-            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${projectId}` }, async (payload) => {
+            // 1. Блокировка от двойного вызова
+            if (localState.isSubscribing) return;
+            localState.isSubscribing = true;
+
+            // 2. Полная очистка старого канала
+            if (localState.realtimeChannel) {
+                const oldChannel = localState.realtimeChannel;
+                localState.realtimeChannel = null; // Сбрасываем ссылку сразу
+                
+                try {
+                    // Сначала отписываемся
+                    await oldChannel.unsubscribe();
+                } catch (e) {
+                    console.warn("Unsubscribe error (safe to ignore)", e);
+                }
+
+                try {
+                    // Затем УДАЛЯЕМ канал из клиента (обязательно!)
+                    await supabase.removeChannel(oldChannel);
+                } catch (e) {
+                    console.warn("Remove channel error", e);
+                }
+            }
+
+            // 3. Пауза для синхронизации состояния (увеличена для надежности)
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Проверка, не изменился ли проект за время ожидания
+            if (localState.activeProject !== projectId) {
+                localState.isSubscribing = false;
+                return;
+            }
+
+            // 4. Создаем новый канал
+            const channel = supabase.channel(`chat:${projectId}`, {
+                config: { broadcast: { self: true } }
+            });
+
+            // 5. Регистрируем обработчик ДО подписки (строго!)
+            channel.on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `project_id=eq.${projectId}`
+            }, async (payload) => {
                 const msg = payload.new;
-                if (msg.sender_id === state.currentUser.id) msg.author = { name: state.appUser?.name || 'Я' };
-                else {
-                    if (!localState.knownAuthors[msg.sender_id]) { const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single(); localState.knownAuthors[msg.sender_id] = userData?.name || 'User'; }
+                
+                if (msg.sender_id === state.currentUser.id) {
+                    msg.author = { name: state.appUser?.name || 'Я' };
+                } else {
+                    if (!localState.knownAuthors[msg.sender_id]) {
+                         const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
+                         localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
+                    }
                     msg.author = { name: localState.knownAuthors[msg.sender_id] };
                 }
-                localState.messages.push(msg); appendMessage(msg); scrollToBottom();
+
+                localState.messages.push(msg);
+                appendMessage(msg);
+                scrollToBottom();
             });
-            try { await channel.subscribe(); localState.realtimeChannel = channel; } catch(e) { console.error("Realtime error", e); }
+
+            // 6. Подписываемся
+            try {
+                await channel.subscribe();
+                localState.realtimeChannel = channel;
+                console.log(`Realtime subscribed to project ${projectId}`);
+            } catch(e) {
+                console.error("Realtime subscription failed", e);
+            } finally {
+                localState.isSubscribing = false;
+            }
         }
 
         function renderProjects() {
@@ -413,9 +471,7 @@
             elements.chatMessages.addEventListener('scroll', async () => { if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false); });
         }
 
-        // ============================================
-        // НОВАЯ ЛОГИКА ЗАГРУЗКИ ФАЙЛОВ
-        // ============================================
+        // FILE UPLOAD WITH PROGRESS
         async function handleFiles(filesList) {
             if (!filesList.length) return;
 
@@ -423,38 +479,27 @@
             const validFiles = [];
             const tooLargeFiles = [];
 
-            // 1. Фильтрация файлов
             Array.from(filesList).forEach(file => {
-                if (file.size > MAX_FILE_SIZE) {
-                    tooLargeFiles.push(file.name);
-                } else {
-                    validFiles.push(file);
-                }
+                if (file.size > MAX_FILE_SIZE) tooLargeFiles.push(file.name);
+                else validFiles.push(file);
             });
 
-            if (tooLargeFiles.length > 0) {
-                utils.showToast(`Файлы > 49МБ нельзя загрузить: ${tooLargeFiles.join(', ')}`, 'error');
-            }
-
+            if (tooLargeFiles.length > 0) utils.showToast(`Файлы > 49МБ нельзя загрузить: ${tooLargeFiles.join(', ')}`, 'error');
             if (validFiles.length === 0) return;
 
-            // 2. Инициализация UI модального окна
             elements.uploadList.innerHTML = validFiles.map(f => `
                 <div class="upload-file-item" data-name="${f.name}">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-ink truncate w-48">${f.name}</span>
                         <span class="text-[10px] text-ink-muted progress-text">Ожидание...</span>
                     </div>
-                    <div class="upload-progress-bg">
-                        <div class="upload-progress-fill" style="width: 0%"></div>
-                    </div>
+                    <div class="upload-progress-bg"><div class="upload-progress-fill" style="width: 0%"></div></div>
                 </div>
             `).join('');
             
             elements.uploadCount.textContent = `0 из ${validFiles.length}`;
             elements.uploadModal.classList.remove('hidden');
 
-            // 3. Процесс загрузки
             let completedCount = 0;
 
             for (const file of validFiles) {
@@ -463,32 +508,24 @@
                 const progressText = itemEl.querySelector('.progress-text');
 
                 progressText.textContent = "Загрузка...";
-                
                 const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
                 const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
 
-                const { data, error } = await supabase.storage
-                    .from('user-files')
-                    .upload(filePath, file, {
-                        onUploadProgress: (progressEvent) => {
-                            const percent = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-                            progressFill.style.width = `${percent}%`;
-                            progressText.textContent = `${percent}%`;
-                        }
-                    });
+                const { data, error } = await supabase.storage.from('user-files').upload(filePath, file, {
+                    onUploadProgress: (progressEvent) => {
+                        const percent = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                        progressFill.style.width = `${percent}%`;
+                        progressText.textContent = `${percent}%`;
+                    }
+                });
 
                 if (error) {
-                    progressFill.style.width = '100%';
-                    progressFill.classList.add('!bg-red-500');
-                    progressText.textContent = 'Ошибка';
-                    progressText.classList.add('upload-status-error');
+                    progressFill.style.width = '100%'; progressFill.classList.add('!bg-red-500');
+                    progressText.textContent = 'Ошибка'; progressText.classList.add('upload-status-error');
                     utils.showToast(`Ошибка: ${file.name}`, 'error');
                 } else {
-                    progressFill.style.width = '100%';
-                    progressFill.classList.add('!bg-green-500');
-                    progressText.textContent = 'Готово';
-                    progressText.classList.add('upload-status-done');
-
+                    progressFill.style.width = '100%'; progressFill.classList.add('!bg-green-500');
+                    progressText.textContent = 'Готово'; progressText.classList.add('upload-status-done');
                     const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
                     await supabase.from('files').insert({
                         project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name,
@@ -496,19 +533,12 @@
                     });
                     await logFileAction('create', file.name);
                 }
-
                 completedCount++;
                 elements.uploadCount.textContent = `${completedCount} из ${validFiles.length}`;
             }
-
-            // 4. Завершение
             await loadFiles();
             elements.filesList.scrollTop = 0;
-
-            // Автоскрытие через 1.5 секунды
-            setTimeout(() => {
-                elements.uploadModal.classList.add('hidden');
-            }, 1500);
+            setTimeout(() => { elements.uploadModal.classList.add('hidden'); }, 1500);
         }
 
         async function logFileAction(action, fileName) { 
