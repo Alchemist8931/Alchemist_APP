@@ -86,28 +86,28 @@
         </div>
 
         <!-- БЛОК 2: Управление (Col 2) -->
-        <!-- Строка 1: Селект проекта -->
+        <!-- Строка 1: Имя файла -->
         <div class="col-start-2 row-start-1">
+            <p class="text-xs text-ink font-medium truncate file-name"></p>
+        </div>
+        
+        <!-- Строка 2: Пользователь и Дата -->
+        <div class="col-start-2 row-start-2 relative">
+            <p class="text-[10px] text-ink-muted file-meta"></p>
+        </div>
+
+        <!-- БЛОК 3: Информация (Col 3) -->
+        <!-- Строка 1: Селект проекта -->
+        <div class="col-start-3 row-start-1 min-w-0 self-end">
             <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
                 <option value="">Мои файлы</option>
             </select>
         </div>
         
         <!-- Строка 2: Теги -->
-        <div class="col-start-2 row-start-2 relative">
+        <div class="col-start-3 row-start-2 self-start">
             <input type="text" class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags font-sans tracking-normal" placeholder="Тег + пробел">
             <div class="hidden absolute left-0 bottom-full mb-1 w-48 bg-surface border border-gray-light rounded shadow-lg text-xs max-h-32 overflow-y-auto z-10 tags-dropdown"></div>
-        </div>
-
-        <!-- БЛОК 3: Информация (Col 3) -->
-        <!-- Строка 1: Имя файла -->
-        <div class="col-start-3 row-start-1 min-w-0 self-end">
-            <p class="text-xs text-ink font-medium truncate file-name"></p>
-        </div>
-        
-        <!-- Строка 2: Пользователь и Дата -->
-        <div class="col-start-3 row-start-2 self-start">
-            <p class="text-[10px] text-ink-muted file-meta"></p>
         </div>
 
         <!-- БЛОК 4: Действия (Col 4) -->
