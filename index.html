@@ -829,7 +829,7 @@
             async getAppUser(userId) {
                 const { data, error } = await supabase
                     .from('app_users')
-                    .select('*')
+                    .select('*, is_super_admin') // <--- Добавили is_super_admin
                     .eq('id', userId)
                     .single();
                 
