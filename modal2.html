@@ -80,26 +80,30 @@
 
 <!-- Шаблон файла -->
 <template id="file-card-template">
-    <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_250px_1fr_auto] grid-rows-2 gap-x-3 gap-y-1 items-center group relative" data-file-id="">
+    <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_1fr_auto] grid-rows-2 gap-x-3 gap-y-1 items-center group relative" data-file-id="">
+        <!-- Блок 1: Иконка -->
         <div class="row-span-2 justify-self-start self-center">
             <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
                 <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
             </div>
         </div>
+        
+        <!-- Блок 2: Информация -->
         <div class="col-start-2 row-start-1 min-w-0 self-end"><p class="text-xs text-ink font-medium truncate file-name"></p></div>
-        <div class="col-start-2 row-start-2 relative self-start"><p class="text-[10px] text-ink-muted file-meta"></p></div>
-        <div class="col-start-3 row-start-1 self-end">
-            <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate"><option value="">Мои файлы</option></select>
+        <div class="col-start-2 row-start-2 flex items-center gap-2 self-start">
+            <p class="text-[10px] text-ink-muted file-meta"></p>
+            <p class="text-[10px] text-ink-muted file-size"></p>
         </div>
-        <div class="col-start-3 row-start-2 self-start">
-            <input type="text" class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags font-sans" placeholder="Тег + пробел">
-        </div>
-        <div class="col-start-4 row-start-1 justify-self-end self-end">
-            <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors">
+
+        <!-- Блок 3: Кнопки (Скачивание и Удаление) -->
+        <div class="col-start-3 row-span-2 flex flex-col items-end justify-center gap-1">
+            <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors" title="Скачать">
                 <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             </a>
+            <button class="delete-file-btn hidden w-7 h-7 rounded border border-red-500/30 hover:bg-red-500/10 flex items-center justify-center transition-colors" title="Удалить файл">
+                <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
         </div>
-        <div class="col-start-4 row-start-2 justify-self-end self-start"><p class="text-[10px] text-ink-muted file-size"></p></div>
     </div>
 </template>
 
@@ -120,6 +124,7 @@
             files: [],
             messages: [],
             activeProject: null, 
+            activeProjectOwner: null, // ID владельца активного проекта
             activeProjectName: null,
             isSuperAdmin: state.appUser?.is_super_admin || false,
             realtimeChannel: null,
@@ -157,31 +162,20 @@
         }
 
         // ============================================
-        // ЗАГРУЗКА ПРОЕКТОВ (С FALLBACK)
+        // ЗАГРУЗКА ДАННЫХ
         // ============================================
         
         async function loadProjects() {
             let data = null;
             let error = null;
 
-            // 1. Пытаемся использовать новую RPC функцию
             const rpcResult = await supabase.rpc('get_accessible_projects');
             
             if (rpcResult.error) {
-                console.warn("RPC 'get_accessible_projects' failed, falling back to standard select.", rpcResult.error);
-                
-                // 2. Если RPC не работает (функция не создана), используем стандартный запрос
-                // Это позволит приложению работать даже без выполнения SQL-скрипта (но без прав админа)
-                const fallbackResult = await supabase
-                    .from('projects')
-                    .select('*')
-                    .eq('owner_id', state.currentUser.id)
-                    .order('created_at', { ascending: false });
-                
+                console.warn("Fallback select");
+                const fallbackResult = await supabase.from('projects').select('*').eq('owner_id', state.currentUser.id).order('created_at', { ascending: false });
                 data = fallbackResult.data;
                 error = fallbackResult.error;
-                
-                // Если fallback сработал, мы точно не супер-админ в этой сессии (функция же не работает)
                 if (!error) localState.isSuperAdmin = false;
             } else {
                 data = rpcResult.data;
@@ -189,7 +183,6 @@
             }
 
             if (error) {
-                console.error("Error loading projects:", error);
                 elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`;
                 return;
             }
@@ -204,10 +197,20 @@
         }
 
         async function loadFiles() {
-            let query = supabase.from('files').select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email)').order('created_at', { ascending: false });
-            if (localState.activeProject) query = query.eq('project_id', localState.activeProject);
-            const { data, error } = await query;
-            if (!error && data) { localState.files = data; renderFiles(); }
+            if (!localState.activeProject) return;
+            
+            // Загружаем файлы и данные о проекте (чтобы знать владельца)
+            const [filesRes, projectRes] = await Promise.all([
+                supabase.from('files').select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email), uploader_id').eq('project_id', localState.activeProject).order('created_at', { ascending: false }),
+                supabase.from('projects').select('owner_id').eq('id', localState.activeProject).single()
+            ]);
+
+            if (filesRes.error) { console.error(filesRes.error); return; }
+            
+            localState.files = filesRes.data || [];
+            if (!projectRes.error) localState.activeProjectOwner = projectRes.data?.owner_id;
+            
+            renderFiles();
         }
 
         // ============================================
@@ -267,61 +270,80 @@
                 <div class="p-2 mb-2 text-xs text-ink-muted uppercase tracking-wider">Проекты ${localState.isSuperAdmin ? '<span class="text-green-500">(Admin)</span>' : ''}</div>
                 <div class="space-y-1">
                     ${localState.projects.map(p => `
-                        <div class="project-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-surface transition-colors ${localState.activeProject === p.id ? 'bg-surface border border-gray-light' : ''}" data-id="${p.id}">
+                        <div class="project-item flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-surface transition-colors ${localState.activeProject === p.id ? 'bg-surface border border-gray-light' : ''}" data-id="${p.id}">
                             <div class="w-2 h-2 rounded-full bg-ink"></div>
                             <span class="text-sm text-ink truncate flex-1">${escapeHtml(p.name)}</span>
-                            <button class="project-settings-btn text-ink-muted hover:text-ink p-1" data-id="${p.id}" title="Настройки">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            </button>
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button class="delete-project-btn text-ink-muted hover:text-red-400 p-1" data-id="${p.id}" title="Удалить проект">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                                <button class="project-settings-btn text-ink-muted hover:text-ink p-1" data-id="${p.id}" title="Настройки доступа">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </button>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
             `;
 
+            // События
             document.querySelectorAll('.project-item').forEach(el => {
                 el.addEventListener('click', async (e) => {
-                    if (e.target.closest('.project-settings-btn')) return;
-                    const id = el.dataset.id;
-                    localState.activeProject = id;
-                    const project = localState.projects.find(p => p.id === id);
-                    localState.activeProjectName = project ? project.name : 'Проект';
-                    elements.uploadHint.textContent = `Файлы: "${localState.activeProjectName}"`;
-                    
-                    updateChatState(!!id);
-                    localState.messages = [];
-                    localState.oldestMessageDate = null;
-                    localState.hasMoreMessages = true;
-
-                    if(id) { await loadMessages(true); subscribeToChat(id); } 
-                    else { if(localState.realtimeChannel) supabase.removeChannel(localState.realtimeChannel); elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; }
-                    await loadFiles();
-                    renderProjects();
+                    if (e.target.closest('.project-settings-btn') || e.target.closest('.delete-project-btn')) return;
+                    selectProject(el.dataset.id);
                 });
             });
 
             document.querySelectorAll('.project-settings-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => { e.stopPropagation(); openMembersModal(btn.dataset.id); });
             });
+
+            document.querySelectorAll('.delete-project-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); handleDeleteProject(btn.dataset.id); });
+            });
+        }
+
+        async function selectProject(id) {
+            localState.activeProject = id;
+            const project = localState.projects.find(p => p.id === id);
+            localState.activeProjectName = project ? project.name : 'Проект';
+            localState.activeProjectOwner = project ? project.owner_id : null;
+            elements.uploadHint.textContent = `Файлы: "${localState.activeProjectName}"`;
+            
+            updateChatState(!!id);
+            localState.messages = [];
+            localState.oldestMessageDate = null;
+            localState.hasMoreMessages = true;
+
+            if(id) { await loadMessages(true); subscribeToChat(id); } 
+            else { if(localState.realtimeChannel) supabase.removeChannel(localState.realtimeChannel); elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; }
+            await loadFiles();
+            renderProjects();
         }
 
         function renderFiles() {
             if (localState.files.length === 0) { elements.filesList.innerHTML = `<div class="text-center py-20 text-ink-muted text-sm">Нет файлов</div>`; return; }
             const template = document.getElementById('file-card-template');
             elements.filesList.innerHTML = '';
+            
+            // Проверяем права на удаление: Супер-админ или Владелец проекта
+            const canDelete = localState.isSuperAdmin || (localState.activeProjectOwner === state.currentUser.id);
+
             localState.files.forEach(f => {
                 const clone = template.content.cloneNode(true);
                 clone.querySelector('.ext-icon').textContent = f.name.split('.').pop().toUpperCase().substring(0,4);
                 clone.querySelector('.file-name').textContent = f.name;
-                clone.querySelector('.file-meta').textContent = `${f.profiles?.name || 'User'} • ${formatFullDate(f.created_at)}`;
+                clone.querySelector('.file-meta').textContent = `${f.profiles?.name || 'User'}`;
                 clone.querySelector('.file-size').textContent = formatSize(f.size);
                 clone.querySelector('a').href = f.storage_path;
-                const select = clone.querySelector('.select-project');
-                select.innerHTML = '<option value="">Мои файлы</option>';
-                localState.projects.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name; select.appendChild(opt); });
-                select.value = f.project_id || "";
-                clone.querySelector('.input-tags').value = (f.tags || []).join(' ');
-                select.addEventListener('change', (e) => updateFileProject(f.id, e.target.value));
-                clone.querySelector('.input-tags').addEventListener('change', (e) => updateFileTags(f.id, e.target.value));
+                
+                // Показываем кнопку удаления, если есть права
+                const delBtn = clone.querySelector('.delete-file-btn');
+                if (canDelete) {
+                    delBtn.classList.remove('hidden');
+                    delBtn.addEventListener('click', () => handleDeleteFile(f.id, f.storage_path, f.name));
+                }
+
                 elements.filesList.appendChild(clone);
             });
         }
@@ -332,7 +354,84 @@
         }
         function renderMessages() { elements.chatMessages.innerHTML = localState.messages.map(m => createMessageHTML(m)).join(''); }
         function createMessageHTML(m) {
-            return `<div class="message-item p-2 rounded-lg hover:bg-surface/50"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-surface border border-gray-light flex-shrink-0 flex items-center justify-center text-[8px] text-ink-muted">${m.author?.name ? escapeHtml(m.author.name.charAt(0).toUpperCase()) : 'U'}</div><div class="flex-1"><div class="flex items-baseline gap-2"><span class="text-[11px] font-semibold text-ink">${escapeHtml(m.author?.name || 'User')}</span><span class="text-[9px] text-ink-muted">${formatTime(m.created_at)}</span></div><p class="text-xs text-ink-light mt-0.5 whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
+            return `<div class="message-item p-2 rounded-lg hover:bg-surface/50"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-surface border border-gray-light flex-shrink-0 flex items-center justify-center text-[8px] text-ink-muted">${m.author?.name ? escapeHtml(m.author.name.charAt(0).toUpperCase()) : 'U'}</div><div class="flex-1"><div class="flex items-baseline gap-2"><span class="text-[11px] font-semibold text-ink">${escapeHtml(m.author?.name || 'System')}</span><span class="text-[9px] text-ink-muted">${formatTime(m.created_at)}</span></div><p class="text-xs text-ink-light mt-0.5 whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
+        }
+
+        // ============================================
+        // ДЕЙСТВИЯ: УДАЛЕНИЕ
+        // ============================================
+
+        async function handleDeleteProject(projectId) {
+            if (!confirm('Вы уверены, что хотите удалить проект и все его файлы? Это действие необратимо.')) return;
+
+            utils.showToast('Удаление проекта...', 'info');
+
+            // 1. Получаем список файлов для удаления из Storage
+            const { data: files } = await supabase.from('files').select('storage_path').eq('project_id', projectId);
+            
+            // 2. Удаляем файлы из Storage
+            if (files && files.length > 0) {
+                const paths = files.map(f => f.storage_path);
+                // Supabase Storage требует массив путей для удаления
+                // Извлекаем путь относительно бакета (без домена)
+                // В вашем коде путь: `userId/timestamp_name.ext`
+                // storage_path содержит полный URL, нужно извлечь часть пути
+                const storagePaths = paths.map(p => {
+                    try {
+                        const url = new URL(p);
+                        // Декодируем, чтобы получить путь с папками
+                        return decodeURIComponent(url.pathname.split('/storage/v1/object/public/user-files/')[1]);
+                    } catch {
+                        return null;
+                    }
+                }).filter(Boolean);
+
+                if (storagePaths.length > 0) {
+                    await supabase.storage.from('user-files').remove(storagePaths);
+                }
+            }
+
+            // 3. Удаляем проект из БД (каскадно удалятся записи в files, messages, members)
+            const { error } = await supabase.from('projects').delete().eq('id', projectId);
+
+            if (error) {
+                utils.showToast('Ошибка удаления: ' + error.message, 'error');
+            } else {
+                localState.projects = localState.projects.filter(p => p.id !== projectId);
+                if (localState.activeProject === projectId) {
+                    selectProject(null); // Сбрасываем выбор
+                }
+                renderProjects();
+                utils.showToast('Проект удален', 'success');
+            }
+        }
+
+        async function handleDeleteFile(fileId, storageUrl, fileName) {
+            if (!confirm(`Удалить файл "${fileName}"?`)) return;
+
+            // 1. Удаляем из Storage
+            try {
+                const url = new URL(storageUrl);
+                const filePath = decodeURIComponent(url.pathname.split('/storage/v1/object/public/user-files/')[1]);
+                await supabase.storage.from('user-files').remove([filePath]);
+            } catch (e) {
+                console.warn("Could not delete from storage, proceeding with DB delete", e);
+            }
+
+            // 2. Удаляем из БД
+            const { error } = await supabase.from('files').delete().eq('id', fileId);
+
+            if (error) {
+                utils.showToast('Ошибка удаления файла', 'error');
+            } else {
+                // 3. Логируем в чат
+                await logFileAction('delete', fileName);
+                
+                // Обновляем UI
+                localState.files = localState.files.filter(f => f.id !== fileId);
+                renderFiles();
+                utils.showToast('Файл удален', 'success');
+            }
         }
 
         // ============================================
@@ -348,7 +447,6 @@
             if(error) { elements.membersList.innerHTML = '<div class="text-red-500 text-xs">Ошибка</div>'; return; }
             
             const project = localState.projects.find(p => p.id === projectId);
-            // Владелец
             let owner = null;
             if (project.owner_id === state.currentUser.id) owner = state.appUser;
             else {
@@ -421,7 +519,7 @@
         async function removeMember(userId) {
             const { error } = await supabase.from('project_members').delete().match({ project_id: localState.activeProject, user_id: userId });
             if(error) utils.showToast("Ошибка", "error");
-            else { utils.showToast("Удален", "info"); openMembersModal(localState.activeProject); }
+            else { utils.showToast("Участник удален", "info"); openMembersModal(localState.activeProject); }
         }
 
         // ============================================
@@ -462,6 +560,9 @@
                     project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name,
                     mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: []
                 });
+                
+                // Логируем создание файла
+                if(!dbError) await logFileAction('create', file.name);
             }
             utils.showToast('Готово', 'success');
             elements.fileInput.value = '';
@@ -469,19 +570,28 @@
             elements.filesList.scrollTop = 0;
         }
 
+        async function logFileAction(action, fileName) {
+            // action: 'create' или 'delete'
+            const text = action === 'create' 
+                ? `Создал файл: ${fileName}` 
+                : `Удалил файл: ${fileName}`;
+
+            await supabase.from('messages').insert({
+                project_id: localState.activeProject,
+                sender_id: state.currentUser.id,
+                content: text
+            });
+        }
+
         async function sendMessage() {
             const text = elements.chatInput.value.trim();
             if (!text || !localState.activeProject) return;
-            const tempId = 'temp-' + Date.now();
-            appendMessage({ id: tempId, content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name } });
+            appendMessage({ id: 'temp-' + Date.now(), content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name } });
             scrollToBottom();
             elements.chatInput.value = ''; elements.chatInput.style.height = 'auto';
             await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
         }
         
-        async function updateFileProject(fileId, projectId) { await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId); }
-        async function updateFileTags(fileId, tagsString) { await supabase.from('files').update({ tags: tagsString.split(' ').filter(t => t.trim() !== '') }).eq('id', fileId); }
-
         function formatFullDate(dateStr) { const d = new Date(dateStr); return `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })} ( ${d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} )`; }
         function formatTime(dateStr) { return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
         function formatSize(bytes) { if(bytes > 1000*1024*1024) return (bytes/(1024*1024*1024)).toFixed(1)+' GB'; if(bytes > 1024*1024) return (bytes/(1024*1024)).toFixed(1)+' MB'; if(bytes > 1024) return (bytes/1024).toFixed(1)+' KB'; return bytes + ' B'; }
