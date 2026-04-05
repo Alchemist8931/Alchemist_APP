@@ -706,7 +706,7 @@
                     <div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div>
-                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
+                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? 'admin' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
                         </div>
                         ${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}
                     </div>
