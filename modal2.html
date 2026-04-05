@@ -132,7 +132,10 @@
 
 <script>
 (function() {
-    function waitForGlobals(callback) { if (window.AppState && window.supabase && window.Utils) callback(); else setTimeout(() => waitForGlobals(callback), 100); }
+    function waitForGlobals(callback) { 
+        if (window.AppState && window.supabase && window.Utils) callback(); 
+        else setTimeout(() => waitForGlobals(callback), 100); 
+    }
 
     waitForGlobals(() => {
         const state = window.AppState;
@@ -146,7 +149,6 @@
             fileRefreshInterval: null, knownAuthors: {}
         };
 
-        // Кэшируем текущего пользователя
         if (state.currentUser && state.appUser) {
             localState.knownAuthors[state.currentUser.id] = state.appUser.name || state.currentUser.email;
         }
@@ -187,7 +189,10 @@
             renderProjects();
         }
 
-        async function loadAllTags() { const { data: files } = await supabase.from('files').select('tags'); if(files) files.forEach(f => { if(f.tags) f.tags.forEach(t => localState.allTags.add(t)); }); }
+        async function loadAllTags() { 
+            const { data: files } = await supabase.from('files').select('tags'); 
+            if(files) files.forEach(f => { if(f.tags) f.tags.forEach(t => localState.allTags.add(t)); }); 
+        }
         
         let isLoadingFilesNow = false;
         async function loadFiles() {
@@ -229,41 +234,21 @@
             localState.isLoadingMessages = false;
         }
 
-        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ (Race Condition Fix)
         async function subscribeToChat(projectId) {
-            const myProjectId = projectId; // Запоминаем ID, для которого запустили подписку
+            const myProjectId = projectId;
 
-            // 1. Если есть активный канал - уничтожаем его ПЕРЕД созданием нового
             if (localState.realtimeChannel) {
                 const oldChannel = localState.realtimeChannel;
-                localState.realtimeChannel = null; // Сбрасываем ссылку
-
-                try {
-                    // Сначала отписываемся
-                    await oldChannel.unsubscribe();
-                } catch (e) { console.warn("Old unsubscribe error", e); }
-                
-                try {
-                    // Затем полностью удаляем канал из клиента
-                    await supabase.removeChannel(oldChannel);
-                } catch (e) { console.warn("Remove channel error", e); }
-
-                // Даем время на очистку внутренних структур SDK (важно для Safari/Firefox)
+                localState.realtimeChannel = null;
+                try { await oldChannel.unsubscribe(); } catch (e) { console.warn("Unsubscribe error", e); }
+                try { await supabase.removeChannel(oldChannel); } catch (e) { console.warn("Remove channel error", e); }
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
 
-            // 2. Проверяем, не переключил ли пользователь проект, пока мы чистили старый
-            if (localState.activeProject !== myProjectId) {
-                console.log(`Project switched from ${myProjectId} to ${localState.activeProject}, aborting subscription.`);
-                return;
-            }
+            if (localState.activeProject !== myProjectId) return;
 
-            // 3. Создаем НОВЫЙ канал
-            const channel = supabase.channel(`chat:${myProjectId}`, {
-                config: { broadcast: { self: true } }
-            });
+            const channel = supabase.channel(`chat:${myProjectId}`, { config: { broadcast: { self: true } } });
 
-            // 4. Регистрируем обработчик ДО подписки
             channel.on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -271,8 +256,6 @@
                 filter: `project_id=eq.${myProjectId}`
             }, async (payload) => {
                 const msg = payload.new;
-                
-                // Заполняем автора
                 if (msg.sender_id === state.currentUser.id) {
                     msg.author = { name: state.appUser?.name || 'Я' };
                 } else {
@@ -282,21 +265,16 @@
                     }
                     msg.author = { name: localState.knownAuthors[msg.sender_id] };
                 }
-
                 localState.messages.push(msg);
                 appendMessage(msg);
                 scrollToBottom();
             });
 
-            // 5. Подписываемся
             try {
                 await channel.subscribe();
-                // После успешной подписки снова проверяем, актуален ли еще этот проект
                 if (localState.activeProject === myProjectId) {
                     localState.realtimeChannel = channel;
-                    console.log(`Subscribed to ${myProjectId}`);
                 } else {
-                    // Если пользователь уже ушел, сразу отписываемся
                     channel.unsubscribe();
                 }
             } catch(e) {
@@ -395,7 +373,7 @@
             showConfirmModal('Удалить проект и все файлы?', async () => {
                 utils.showToast('Удаление...', 'info');
                 const { data: files } = await supabase.from('files').select('storage_path').eq('project_id', projectId);
-                if (files && files.length > 0) { const storagePaths = files.map(p => { try { return decodeURIComponent(new URL(p.storage_path).pathname.split('/user-files/')[1]; } catch { return null; } }).filter(Boolean); if (storagePaths.length > 0) await supabase.storage.from('user-files').remove(storagePaths); }
+                if (files && files.length > 0) { const storagePaths = files.map(p => { try { return decodeURIComponent(new URL(p.storage_path).pathname.split('/user-files/')[1]); } catch { return null; } }).filter(Boolean); if (storagePaths.length > 0) await supabase.storage.from('user-files').remove(storagePaths); }
                 const { error } = await supabase.from('projects').delete().eq('id', projectId);
                 if (error) utils.showToast('Ошибка: ' + error.message, "error");
                 else { localState.projects = localState.projects.filter(p => p.id !== projectId); elements.membersModal.classList.add('hidden'); if (localState.activeProject === projectId) selectProject(null); renderProjects(); utils.showToast('Удалено', 'success'); }
@@ -404,7 +382,7 @@
 
         async function handleDeleteFile(fileId, storageUrl, fileName) {
             showConfirmModal(`Удалить "${fileName}"?`, async () => {
-                try { const filePath = decodeURIComponent(new URL(storageUrl).pathname.split('/user-files/')[1]; await supabase.storage.from('user-files').remove([filePath]); } catch (e) { console.warn(e); }
+                try { const filePath = decodeURIComponent(new URL(storageUrl).pathname.split('/user-files/')[1]); await supabase.storage.from('user-files').remove([filePath]); } catch (e) { console.warn(e); }
                 const { error } = await supabase.from('files').delete().eq('id', fileId);
                 if (error) utils.showToast('Ошибка', 'error');
                 else { await logFileAction('delete', fileName); localState.files = localState.files.filter(f => f.id !== fileId); renderFiles(); utils.showToast('Удалено', 'success'); }
@@ -448,26 +426,37 @@
         function initEventListeners() {
             elements.confirmModalCancel.addEventListener('click', () => { elements.confirmModal.classList.add('hidden'); localState.confirmCallback = null; });
             elements.confirmModalOk.addEventListener('click', () => { elements.confirmModal.classList.add('hidden'); if (localState.confirmCallback) localState.confirmCallback(); });
+            
             document.getElementById('create-project-btn').addEventListener('click', () => { elements.createModal.classList.remove('hidden'); elements.createModalInput.value = ''; elements.createModalInput.focus(); });
             document.getElementById('close-create-modal').addEventListener('click', () => elements.createModal.classList.add('hidden'));
             document.getElementById('cancel-create-btn').addEventListener('click', () => elements.createModal.classList.add('hidden'));
-            document.getElementById('confirm-create-btn').addEventListener('click', async () => { const name = elements.createModalInput.value.trim(); if (!name) return; const { data, error } = await supabase.from('projects').insert({ name: name, owner_id: state.currentUser.id }).select().single(); if (!error && data) { localState.projects.unshift(data); renderProjects(); utils.showToast('Создано', 'success'); elements.createModal.classList.add('hidden'); } else utils.showToast('Ошибка', 'error'); });
+            
+            document.getElementById('confirm-create-btn').addEventListener('click', async () => { 
+                const name = elements.createModalInput.value.trim(); if (!name) return; 
+                const { data, error } = await supabase.from('projects').insert({ name: name, owner_id: state.currentUser.id }).select().single(); 
+                if (!error && data) { localState.projects.unshift(data); renderProjects(); utils.showToast('Создано', 'success'); elements.createModal.classList.add('hidden'); } 
+                else utils.showToast('Ошибка', 'error'); 
+            });
+            
             document.getElementById('close-members-modal').addEventListener('click', () => { elements.membersModal.classList.add('hidden'); });
             document.getElementById('delete-project-modal-btn').addEventListener('click', () => handleDeleteProject(localState.activeProject));
+            
             elements.dropZone.addEventListener('click', () => elements.fileInput.click());
             elements.fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
             elements.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); elements.dropZone.classList.add('border-ink', 'bg-surface'); });
             elements.dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); elements.dropZone.classList.remove('border-ink', 'bg-surface'); });
             elements.dropZone.addEventListener('drop', (e) => { e.preventDefault(); elements.dropZone.classList.remove('border-ink', 'bg-surface'); handleFiles(e.dataTransfer.files); });
+            
             elements.chatInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
             elements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-            elements.sendBtn.addEventListener('click', sendMessage)
+            elements.sendBtn.addEventListener('click', sendMessage);
             elements.chatMessages.addEventListener('scroll', async () => { if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false); });
         }
 
         // FILE UPLOAD WITH PROGRESS
         async function handleFiles(filesList) {
             if (!filesList.length) return;
+
             const MAX_FILE_SIZE = 49 * 1024 * 1024; // 49 MB
             const validFiles = [];
             const tooLargeFiles = [];
