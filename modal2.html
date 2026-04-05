@@ -278,18 +278,19 @@
 
             // 3. Регистрируем обработчик ДО подписки
             channel.on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `project_id=eq.${myProjectId}`
-            }, async (payload) => {
-                const msg = payload.new;
+    event: 'INSERT',
+    schema: 'public',
+    table: 'messages',
+    filter: `project_id=eq.${myProjectId}`
+}, async (payload) => {
+    const msg = payload.new;
 
-                // ИСПРАВЛЕНИЕ ДУБЛИРОВАНИЯ:
-                // Если сообщение от текущего пользователя, игнорируем его.
-                if (msg.sender_id === state.currentUser.id) {
-                    return;
-                }
+    // ИСПРАВЛЕНИЕ ДУБЛИРОВАНИЯ:
+    // Проверяем, есть ли уже сообщение с таким ID в локальном списке
+    // (это значит, что мы уже отображали его при оптимистичном обновлении)
+    if (localState.messages.some(m => m.id === msg.id)) {
+        return;
+    }
 
                 // Обновляем UI для чужих сообщений
                 if (!localState.knownAuthors[msg.sender_id]) {
@@ -555,13 +556,35 @@
         }
 
         async function sendMessage() {
-            const text = elements.chatInput.value.trim(); if (!text || !localState.activeProject) return;
-            // Оптимистичное обновление (показываем сообщение сразу)
-            appendMessage({ id: 'temp-' + Date.now(), content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name } });
-            scrollToBottom(); elements.chatInput.value = ''; elements.chatInput.style.height = 'auto';
-            // Отправка в БД
-            await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
+    const text = elements.chatInput.value.trim(); if (!text || !localState.activeProject) return;
+    
+    // Очищаем input сразу
+    elements.chatInput.value = ''; 
+    elements.chatInput.style.height = 'auto';
+    
+    // Отправка в БД сначала
+    const { data, error } = await supabase.from('messages').insert({ 
+        project_id: localState.activeProject, 
+        sender_id: state.currentUser.id, 
+        content: text 
+    }).select().single();
+    
+    if (error) {
+        console.error('Failed to send message:', error);
+        return;
+    }
+    
+    // Добавляем сообщение с реальным ID из базы
+    if (data) {
+        if (!localState.knownAuthors[data.sender_id]) {
+            localState.knownAuthors[data.sender_id] = state.appUser.name;
         }
+        data.author = { name: localState.knownAuthors[data.sender_id] };
+        localState.messages.push(data);
+        appendMessage(data);
+        scrollToBottom();
+    }
+}
         
         function formatTime(dateStr) { return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
         function formatSize(bytes) { if(bytes > 1000*1024*1024) return (bytes/(1024*1024*1024)).toFixed(1)+' GB'; if(bytes > 1024*1024) return (bytes/(1024*1024)).toFixed(1)+' MB'; if(bytes > 1024) return (bytes/1024).toFixed(1)+' KB'; return bytes + ' B'; }
