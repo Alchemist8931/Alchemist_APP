@@ -148,9 +148,9 @@
             hasMoreMessages: true, oldestMessageDate: null, allTags: new Set(), confirmCallback: null,
             fileRefreshInterval: null, knownAuthors: {},
             // --- Переменные для контроля соединения ---
-            connectionWatchdog: null, // ID таймера проверки
-            reconnectAttempts: 0,     // Счетчик попыток переподключения
-            MAX_RECONNECT_ATTEMPTS: 3 // Максимум попыток перед logout
+            connectionWatchdog: null, 
+            reconnectAttempts: 0,     
+            MAX_RECONNECT_ATTEMPTS: 2 // Уменьшил до 2 для быстрой реакции
         };
 
         if (state.currentUser && state.appUser) {
@@ -195,18 +195,17 @@
         // ==========================================
 
         function forceLogout() {
+            if (localState.connectionWatchdog) clearInterval(localState.connectionWatchdog);
             utils.showToast("Сессия истекла. Выполняется выход...", "error");
-            setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+            setTimeout(() => { window.location.href = 'index.html'; }, 2000);
         }
 
         function startConnectionWatchdog() {
-            // Очищаем старый таймер, если есть
             if (localState.connectionWatchdog) clearInterval(localState.connectionWatchdog);
             
-            // Запускаем проверку каждые 30 секунд
             localState.connectionWatchdog = setInterval(() => {
                 checkConnectionState();
-            }, 30000);
+            }, 25000); // Проверка каждые 25 сек
         }
 
         async function checkConnectionState() {
@@ -214,36 +213,37 @@
 
             const currentState = localState.realtimeChannel.state;
             
-            // Если канал не в состоянии joined, пытаемся оживить
-            if (currentState !== 'joined') {
-                console.warn(`Watchdog: Connection lost (state: ${currentState})`);
-                
-                if (localState.reconnectAttempts >= localState.MAX_RECONNECT_ATTEMPTS) {
-                    clearInterval(localState.connectionWatchdog);
-                    forceLogout();
-                    return;
-                }
-
-                localState.reconnectAttempts++;
-                utils.showToast(`Потеряно соединение... Попытка ${localState.reconnectAttempts}`, "warning");
-                
-                // Пробуем переподписаться
-                await subscribeToChat(localState.activeProject, true);
-            } else {
-                // Если все ок, сбрасываем счетчик попыток
-                localState.reconnectAttempts = 0;
+            // ВАЖНО: Если мы в процессе подключения (joining), НЕ трогаем ничего.
+            if (currentState === 'joining' || currentState === 'joined') {
+                localState.reconnectAttempts = 0; // Сброс счетчика
+                return;
             }
+
+            // Если пришли сюда, значит состояние: closed, errored, timed_out, leaving
+            console.warn(`Watchdog: Invalid state detected (${currentState})`);
+            
+            if (localState.reconnectAttempts >= localState.MAX_RECONNECT_ATTEMPTS) {
+                forceLogout();
+                return;
+            }
+
+            localState.reconnectAttempts++;
+            utils.showToast(`Потеряно соединение... Попытка восстановления ${localState.reconnectAttempts}`, "warning");
+            
+            // Пробуем переподписаться
+            // Передаем true, чтобы очистить старый канал перед новым
+            await subscribeToChat(localState.activeProject, true);
         }
 
         // Обработчик видимости вкладки
         function handleVisibilityChange() {
             if (document.visibilityState === 'visible' && localState.activeProject) {
-                // При возвращении на вкладку принудительно проверяем соединение
+                // При возвращении на вкладку просто запускаем проверку
+                // Не делаем reconnect напрямую, чтобы не сбить heartbeat
                 checkConnectionState();
             }
         }
 
-        // Добавляем слушатель видимости
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         async function loadProjects() {
@@ -305,8 +305,7 @@
             localState.isLoadingMessages = false;
         }
 
-        // ИСПРАВЛЕННАЯ ПОДПИСКА С ВОЗВРАТОМ ОШИБКИ
-        // isReconnect: true, если вызывается из Watchdog
+        // ИСПРАВЛЕННАЯ ПОДПИСКА
         async function subscribeToChat(projectId, isReconnect = false) {
             const myProjectId = projectId;
             const channelName = `chat:${myProjectId}`;
@@ -318,10 +317,10 @@
                     await supabase.removeChannel(localState.realtimeChannel); 
                 } catch(e) {}
                 localState.realtimeChannel = null;
-                await new Promise(r => setTimeout(r, 300)); // Пауза для сокета
+                await new Promise(r => setTimeout(r, 300));
             }
 
-            // Если не реконнект, делаем полную очистку
+            // Если не реконнект, делаем полную очистку мусора
             if (!isReconnect) {
                 const allChannels = supabase.realtime.channels;
                 const toRemove = [...allChannels].filter(c => c.topic === channelName);
@@ -336,13 +335,6 @@
             let channel = supabase.channel(channelName, {
                 config: { broadcast: { self: true } }
             });
-
-            // Ловим зомби
-            if (channel.state === 'joined' || channel.state === 'joining') {
-                await supabase.removeChannel(channel);
-                await new Promise(resolve => setTimeout(resolve, 400));
-                channel = supabase.channel(channelName);
-            }
 
             channel.on('postgres_changes', {
                 event: 'INSERT',
@@ -363,25 +355,25 @@
             });
 
             try {
-                await channel.subscribe((status, err) => {
+                // Используем subscribe без await, управляя состоянием через callback
+                channel.subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
-                        localState.reconnectAttempts = 0; // Сброс счетчика при успехе
+                        localState.reconnectAttempts = 0;
                         localState.realtimeChannel = channel;
-                        if (!localState.connectionWatchdog) startConnectionWatchdog(); // Запуск стража
+                        if (!localState.connectionWatchdog) startConnectionWatchdog();
                         console.log(`Subscribed to ${channelName}`);
                     } 
-                    else if (status === 'CLOSED' || status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
-                        console.error(`Realtime Critical Error: ${status}`);
-                        // Если страж не справился за 3 попытки, тут мы точно logout
-                        if (localState.reconnectAttempts >= localState.MAX_RECONNECT_ATTEMPTS) {
-                            forceLogout();
-                        }
+                    else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                        console.error(`Realtime Error: ${status}`);
+                        // Если мы уже подключены (joined) и пришла ошибка - значит разрыв
+                        // Если мы пытаемся подключиться и ошибка - тоже плохо
+                        // Запускаем проверку стража, он решит что делать
+                        checkConnectionState();
                     }
                 });
             } catch(e) {
                 console.error("Subscription failed", e);
-                // Если ошибка при подписке — считаем это попыткой реконнекта
-                if (localState.reconnectAttempts >= localState.MAX_RECONNECT_ATTEMPTS) forceLogout();
+                forceLogout();
             }
         }
 
@@ -416,7 +408,6 @@
             elements.uploadHint.textContent = `Файлы: "${localState.activeProjectName}"`;
             updateChatState(!!id); localState.messages = []; localState.oldestMessageDate = null; localState.hasMoreMessages = true;
             
-            // Сбрасываем счетчик реконнектов при ручном выборе проекта
             localState.reconnectAttempts = 0;
 
             if(id) { await loadMessages(true); await subscribeToChat(id); await loadFiles(); localState.fileRefreshInterval = setInterval(() => loadFiles(), 5000); }
@@ -475,7 +466,6 @@
         function appendMessage(msg) { elements.chatMessages.insertAdjacentHTML('beforeend', createMessageHTML(msg)); }
         function renderMessages() { elements.chatMessages.innerHTML = localState.messages.map(m => createMessageHTML(m)).join(''); }
 
-        // ИСПРАВЛЕННЫЙ HTML СООБЩЕНИЙ
         function createMessageHTML(m) {
             const isSelf = m.sender_id === state.currentUser.id;
             const authorName = m.author?.name || 'System';
@@ -505,7 +495,6 @@
                     </div>
                 </div>`;
             } else {
-                // Чужие сообщения без иконки
                 return `
                 <div class="flex justify-start mb-2 msg-other">
                     <div class="max-w-[70%] flex flex-col items-start">
@@ -678,6 +667,15 @@
         async function sendMessage() {
             const text = elements.chatInput.value.trim(); if (!text || !localState.activeProject) return;
             
+            // ПРОВЕРКА СОЕДИНЕНИЯ ПЕРЕД ОТПРАВКОЙ
+            if (!localState.realtimeChannel || localState.realtimeChannel.state !== 'joined') {
+                utils.showToast("Нет соединения. Попробуйте позже или перезайдите.", "error");
+                // Иницируем проверку соединения
+                checkConnectionState();
+                return;
+ 
+            }
+
             elements.chatInput.value = ''; 
             elements.chatInput.style.height = 'auto';
             
