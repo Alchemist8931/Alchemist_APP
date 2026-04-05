@@ -60,7 +60,7 @@
     </div>
 </div>
 
-<!-- Модальное окно подтверждения (Стилизованное) -->
+<!-- Модальное окно подтверждения -->
 <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-card rounded-xl border border-gray-light w-full max-w-sm p-6 shadow-2xl">
         <h3 id="confirm-modal-title" class="text-lg font-semibold text-ink mb-2">Подтверждение</h3>
@@ -119,8 +119,9 @@
 </div>
 
 <!-- Шаблон файла (Обновленная структура) -->
+<!-- Col 3 width increased to 220px -->
 <template id="file-card-template">
-    <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_1fr_140px_auto] grid-rows-2 gap-x-3 gap-y-2 items-center group relative" data-file-id="">
+    <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_1fr_220px_auto] grid-rows-2 gap-x-3 gap-y-2 items-center group relative" data-file-id="">
         
         <!-- Col 1: Icon (Row span 2) -->
         <div class="row-span-2 justify-self-start self-center">
@@ -130,36 +131,37 @@
         </div>
 
         <!-- Col 2: Info -->
-        <!-- Row 1: Name -->
         <div class="col-start-2 row-start-1 min-w-0 self-end">
             <p class="text-xs text-ink font-medium truncate file-name"></p>
         </div>
-        <!-- Row 2: Meta -->
         <div class="col-start-2 row-start-2 flex items-center gap-2 self-start">
             <p class="text-[10px] text-ink-muted file-meta"></p>
             <p class="text-[10px] text-ink-muted file-size"></p>
         </div>
 
-        <!-- Col 3: Inputs (Left of Buttons) -->
-        <!-- Row 1: Project Select (Left of Download) -->
+        <!-- Col 3: Inputs -->
+        <!-- Row 1: Project Select -->
         <div class="col-start-3 row-start-1 self-end">
             <select class="h-7 w-full bg-surface border border-gray-light rounded px-2 text-[10px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
                 <option value="">Без проекта</option>
             </select>
         </div>
-        <!-- Row 2: Tags Input (Left of Delete) -->
+        <!-- Row 2: Tags Container (Chips) -->
         <div class="col-start-3 row-start-2 self-start">
-             <input type="text" class="h-7 w-full bg-surface border border-gray-light rounded px-2 text-[10px] text-ink focus:outline-none focus:border-ink/30 input-tags" placeholder="Теги">
+             <!-- Tags Container -->
+            <div class="tags-container w-full min-h-[28px] bg-surface border border-gray-light rounded px-1 py-0.5 flex flex-wrap items-center gap-1 cursor-text">
+                <!-- Chips will be rendered here by JS -->
+                <!-- Input is moved here to be part of the flow -->
+                <input type="text" class="tag-input flex-1 min-w-[60px] border-none outline-none bg-transparent text-[10px] text-ink py-0.5" placeholder="Тег + Enter">
+            </div>
         </div>
 
-        <!-- Col 4: Actions (Rightmost) -->
-        <!-- Row 1: Download -->
+        <!-- Col 4: Actions -->
         <div class="col-start-4 row-start-1 self-end">
             <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors" title="Скачать">
                 <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             </a>
         </div>
-        <!-- Row 2: Delete -->
         <div class="col-start-4 row-start-2 self-start">
             <button class="delete-file-btn hidden w-7 h-7 rounded border border-red-500/30 hover:bg-red-500/10 flex items-center justify-center transition-colors" title="Удалить файл">
                 <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -167,6 +169,30 @@
         </div>
     </div>
 </template>
+
+<style>
+    /* Стили для чипсов тегов */
+    .tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(229, 229, 229, 0.1);
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 10px;
+        color: #E5E5E5;
+        white-space: nowrap;
+    }
+    .tag-chip-remove {
+        cursor: pointer;
+        opacity: 0.5;
+        line-height: 1;
+    }
+    .tag-chip-remove:hover {
+        opacity: 1;
+        color: #EF4444;
+    }
+</style>
 
 <script>
 (function() {
@@ -193,7 +219,7 @@
             hasMoreMessages: true,
             oldestMessageDate: null,
             allTags: new Set(),
-            confirmCallback: null // Для модального окна подтверждения
+            confirmCallback: null
         };
 
         const elements = {
@@ -438,9 +464,13 @@
                 });
                 select.value = f.project_id || "";
 
-                // Tags Input
-                const inputTags = clone.querySelector('.input-tags');
-                inputTags.value = (f.tags || []).join(' ');
+                // Tags Container Logic
+                const tagsContainer = clone.querySelector('.tags-container');
+                const tagsInput = clone.querySelector('.tag-input');
+                
+                // Render existing tags as chips
+                const tags = f.tags || [];
+                renderTagChips(tagsContainer, tags, f.id);
 
                 // Delete Button
                 const delBtn = clone.querySelector('.delete-file-btn');
@@ -451,9 +481,55 @@
 
                 // Listeners
                 select.addEventListener('change', (e) => updateFileProject(f.id, e.target.value));
-                inputTags.addEventListener('change', (e) => updateFileTags(f.id, e.target.value));
+                
+                // Tags Input Listener (Enter key)
+                tagsInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = tagsInput.value.trim();
+                        if (val) {
+                            const currentTags = [...tags];
+                            if (!currentTags.includes(val)) {
+                                currentTags.push(val);
+                                updateFileTags(f.id, currentTags);
+                                // Update UI immediately
+                                renderTagChips(tagsContainer, currentTags, f.id);
+                                tagsInput.value = '';
+                            }
+                        }
+                    }
+                });
+
+                // Click on container focuses input
+                tagsContainer.addEventListener('click', () => tagsInput.focus());
 
                 elements.filesList.appendChild(clone);
+            });
+        }
+
+        // Helper to render chips
+        function renderTagChips(container, tags, fileId) {
+            // Remove old chips
+            container.querySelectorAll('.tag-chip').forEach(el => el.remove());
+            
+            // Create chips
+            tags.forEach(tag => {
+                const chip = document.createElement('span');
+                chip.className = 'tag-chip';
+                chip.innerHTML = `${escapeHtml(tag)} <span class="tag-chip-remove" data-tag="${escapeHtml(tag)}">×</span>`;
+                
+                // Insert before input
+                container.insertBefore(chip, container.querySelector('.tag-input'));
+                
+                // Delete listener
+                chip.querySelector('.tag-chip-remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tagToRemove = e.target.dataset.tag;
+                    const newTags = tags.filter(t => t !== tagToRemove);
+                    updateFileTags(fileId, newTags);
+                    // Update UI immediately
+                    renderTagChips(container, newTags, fileId);
+                });
             });
         }
         
@@ -470,7 +546,6 @@
         // ДЕЙСТВИЯ
         // ============================================
 
-        // Универсальная функция показа подтверждения
         function showConfirmModal(message, callback) {
             elements.confirmModalMsg.textContent = message;
             elements.confirmModal.classList.remove('hidden');
@@ -482,10 +557,12 @@
             if (error) utils.showToast("Ошибка обновления проекта", "error");
         }
 
-        async function updateFileTags(fileId, tagsString) {
-            const tags = tagsString.split(' ').filter(t => t.trim() !== '');
+        async function updateFileTags(fileId, tags) {
             const { error } = await supabase.from('files').update({ tags }).eq('id', fileId);
             if(error) utils.showToast("Ошибка сохранения тегов", "error");
+            // Update local state optimistically
+            const file = localState.files.find(f => f.id === fileId);
+            if(file) file.tags = tags;
         }
 
         async function handleDeleteProject(projectId) {
@@ -592,7 +669,7 @@
                     <div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div>
-                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? '' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
+                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
                         </div>
                         ${!isAdmin ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}
                     </div>
@@ -645,7 +722,7 @@
         // ОБРАБОТЧИКИ
         // ============================================
         function initEventListeners() {
-            // Confirm Modal Listeners
+            // Confirm Modal
             elements.confirmModalCancel.addEventListener('click', () => {
                 elements.confirmModal.classList.add('hidden');
                 localState.confirmCallback = null;
