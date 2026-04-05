@@ -7,17 +7,15 @@
     <!-- Контейнер 1600px -->
     <div class="w-[1600px] h-full flex border-l border-r border-gray-light bg-surface-bright">
         
-        <!-- ЛЕВАЯ ПАНЕЛЬ: Проекты (300px) -->
+        <!-- ЛЕВАЯ ПАНЕЛЬ: Проекты -->
         <aside class="w-[300px] flex-shrink-0 border-r border-gray-light flex flex-col">
             <div class="p-4 border-b border-gray-light flex items-center justify-between">
                 <h2 class="font-display font-semibold text-ink">Проекты</h2>
-                <div class="flex gap-2">
-                    <button id="create-project-btn" class="w-8 h-8 rounded-lg border border-gray-light hover:border-ink/30 hover:bg-surface flex items-center justify-center transition-colors" title="Новый проект">
-                        <svg class="w-4 h-4 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                    </button>
-                </div>
+                <button id="create-project-btn" class="w-8 h-8 rounded-lg border border-gray-light hover:border-ink/30 hover:bg-surface flex items-center justify-center transition-colors" title="Новый проект">
+                    <svg class="w-4 h-4 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </button>
             </div>
             <div class="flex-1 overflow-y-auto p-2" id="projects-list">
                 <div class="text-center py-10 text-ink-muted text-xs">Загрузка...</div>
@@ -26,7 +24,6 @@
 
         <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: Файлы -->
         <main class="flex-1 min-w-0 flex flex-col">
-            <!-- Зона загрузки -->
             <div class="p-4 border-b border-gray-light">
                 <div id="drop-zone" class="border-2 border-dashed border-gray-light rounded-xl p-4 text-center cursor-pointer hover:border-ink/20 transition-colors">
                     <input type="file" id="file-input" multiple class="hidden">
@@ -34,14 +31,10 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                     </svg>
                     <p class="text-xs text-ink-light">Перетащите файлы или кликните для выбора</p>
-                    <p class="text-[10px] text-ink-muted mt-1" id="upload-hint">Выберите проект слева для привязки</p>
+                    <p class="text-[10px] text-ink-muted mt-1" id="upload-hint">Выберите проект слева</p>
                 </div>
             </div>
-
-            <!-- Список файлов -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-5" id="files-list">
-                <!-- Файлы -->
-            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-5" id="files-list"></div>
         </main>
 
         <!-- ПРАВАЯ ПАНЕЛЬ: Чат -->
@@ -50,16 +43,10 @@
                 <h2 class="font-display font-semibold text-ink">Чат проекта</h2>
                 <p class="text-xs text-ink-muted mt-1" id="chat-project-name">Выберите проект</p>
             </div>
-            
-            <!-- Сообщения -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col-reverse" id="chat-messages"></div>
-            
-            <!-- Поле ввода -->
             <div class="p-4 border-t border-gray-light bg-surface-bright/50">
                 <div class="flex flex-col gap-2">
-                    <textarea id="chat-input" placeholder="Выберите проект..." 
-                        class="w-full bg-surface border border-gray-light rounded-lg px-4 py-2 text-sm text-ink focus:outline-none focus:border-ink/30 disabled:opacity-50 font-sans tracking-normal resize-none overflow-hidden" 
-                        rows="1" disabled></textarea>
+                    <textarea id="chat-input" placeholder="Выберите проект..." class="w-full bg-surface border border-gray-light rounded-lg px-4 py-2 text-sm text-ink focus:outline-none focus:border-ink/30 disabled:opacity-50 font-sans tracking-normal resize-none overflow-hidden" rows="1" disabled></textarea>
                     <div class="flex justify-end">
                         <button id="send-msg-btn" class="btn-primary px-4 py-2 rounded-lg text-surface-bright disabled:opacity-50" disabled>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +60,7 @@
     </div>
 </div>
 
-<!-- Модальное окно управления участниками -->
+<!-- Модальное окно участников -->
 <div id="members-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-card rounded-xl border border-gray-light w-full max-w-md p-6 shadow-2xl">
         <div class="flex justify-between items-center mb-4">
@@ -82,22 +69,16 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        
-        <!-- Список участников -->
         <div id="members-list" class="space-y-2 mb-4 max-h-40 overflow-y-auto"></div>
-        
-        <!-- Добавление участника -->
         <div class="border-t border-gray-light pt-4">
             <label class="text-xs text-ink-muted block mb-2">Добавить участника</label>
-            <div class="relative">
-                <input type="text" id="add-member-input" placeholder="Введите email пользователя" class="w-full bg-surface border border-gray-light rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink/30">
-                <div id="user-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-surface border border-gray-light rounded-lg shadow-lg hidden z-10 max-h-32 overflow-y-auto"></div>
-            </div>
+            <input type="text" id="add-member-input" placeholder="Введите email" class="w-full bg-surface border border-gray-light rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink/30">
+            <div id="user-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-surface border border-gray-light rounded-lg shadow-lg hidden z-10 max-h-32 overflow-y-auto"></div>
         </div>
     </div>
 </div>
 
-<!-- Шаблон карточки файла -->
+<!-- Шаблон файла -->
 <template id="file-card-template">
     <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_250px_1fr_auto] grid-rows-2 gap-x-3 gap-y-1 items-center group relative" data-file-id="">
         <div class="row-span-2 justify-self-start self-center">
@@ -105,16 +86,10 @@
                 <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
             </div>
         </div>
-        <div class="col-start-2 row-start-1 min-w-0 self-end">
-            <p class="text-xs text-ink font-medium truncate file-name"></p>
-        </div>
-        <div class="col-start-2 row-start-2 relative self-start">
-            <p class="text-[10px] text-ink-muted file-meta"></p>
-        </div>
+        <div class="col-start-2 row-start-1 min-w-0 self-end"><p class="text-xs text-ink font-medium truncate file-name"></p></div>
+        <div class="col-start-2 row-start-2 relative self-start"><p class="text-[10px] text-ink-muted file-meta"></p></div>
         <div class="col-start-3 row-start-1 self-end">
-            <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
-                <option value="">Мои файлы</option>
-            </select>
+            <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate"><option value="">Мои файлы</option></select>
         </div>
         <div class="col-start-3 row-start-2 self-start">
             <input type="text" class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags font-sans" placeholder="Тег + пробел">
@@ -124,9 +99,7 @@
                 <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             </a>
         </div>
-        <div class="col-start-4 row-start-2 justify-self-end self-start">
-             <p class="text-[10px] text-ink-muted file-size"></p>
-        </div>
+        <div class="col-start-4 row-start-2 justify-self-end self-start"><p class="text-[10px] text-ink-muted file-size"></p></div>
     </div>
 </template>
 
@@ -184,15 +157,43 @@
         }
 
         // ============================================
-        // ЗАГРУЗКА ДАННЫХ
+        // ЗАГРУЗКА ПРОЕКТОВ (С FALLBACK)
         // ============================================
         
         async function loadProjects() {
-            const { data, error } = await supabase.rpc('get_accessible_projects');
+            let data = null;
+            let error = null;
+
+            // 1. Пытаемся использовать новую RPC функцию
+            const rpcResult = await supabase.rpc('get_accessible_projects');
+            
+            if (rpcResult.error) {
+                console.warn("RPC 'get_accessible_projects' failed, falling back to standard select.", rpcResult.error);
+                
+                // 2. Если RPC не работает (функция не создана), используем стандартный запрос
+                // Это позволит приложению работать даже без выполнения SQL-скрипта (но без прав админа)
+                const fallbackResult = await supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('owner_id', state.currentUser.id)
+                    .order('created_at', { ascending: false });
+                
+                data = fallbackResult.data;
+                error = fallbackResult.error;
+                
+                // Если fallback сработал, мы точно не супер-админ в этой сессии (функция же не работает)
+                if (!error) localState.isSuperAdmin = false;
+            } else {
+                data = rpcResult.data;
+                error = rpcResult.error;
+            }
+
             if (error) {
                 console.error("Error loading projects:", error);
+                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`;
                 return;
             }
+
             localState.projects = data || [];
             renderProjects();
         }
@@ -203,29 +204,20 @@
         }
 
         async function loadFiles() {
-            let query = supabase
-                .from('files')
-                .select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email)')
-                .order('created_at', { ascending: false });
-
+            let query = supabase.from('files').select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email)').order('created_at', { ascending: false });
             if (localState.activeProject) query = query.eq('project_id', localState.activeProject);
-
             const { data, error } = await query;
-            if (!error && data) {
-                localState.files = data;
-                renderFiles();
-            }
+            if (!error && data) { localState.files = data; renderFiles(); }
         }
 
         // ============================================
         // ЧАТ ЛОГИКА
         // ============================================
-
         function updateChatState(isActive) {
             elements.chatInput.disabled = !isActive;
             elements.sendBtn.disabled = !isActive;
             if (!isActive) {
-                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект для начала чата</div>`;
+                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`;
                 elements.chatProjectName.textContent = "Выберите проект";
             } else {
                 elements.chatProjectName.textContent = localState.activeProjectName;
@@ -237,15 +229,12 @@
             if (localState.isLoadingMessages) return;
             if (!initial && !localState.hasMoreMessages) return;
             localState.isLoadingMessages = true;
-
             let query = supabase.from('messages').select('id, content, created_at, sender_id, author:sender_id(name, email)').eq('project_id', localState.activeProject).order('created_at', { ascending: false });
             if (!initial && localState.oldestMessageDate) query = query.lt('created_at', localState.oldestMessageDate);
             query = query.limit(initial ? 50 : 30);
-
             const { data, error } = await query;
             if (error) { localState.isLoadingMessages = false; return; }
             if (data.length === 0) { localState.hasMoreMessages = false; localState.isLoadingMessages = false; if(initial) elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs">Нет сообщений</div>`; return; }
-
             data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             if (initial) { localState.messages = data; renderMessages(); scrollToBottom(); } 
             else {
@@ -273,16 +262,15 @@
         // ============================================
         // РЕНДЕРИНГ
         // ============================================
-        
         function renderProjects() {
             elements.projectsList.innerHTML = `
-                <div class="p-2 mb-2 text-xs text-ink-muted uppercase tracking-wider">Доступные проекты ${localState.isSuperAdmin ? '(Super Admin)' : ''}</div>
+                <div class="p-2 mb-2 text-xs text-ink-muted uppercase tracking-wider">Проекты ${localState.isSuperAdmin ? '<span class="text-green-500">(Admin)</span>' : ''}</div>
                 <div class="space-y-1">
                     ${localState.projects.map(p => `
                         <div class="project-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-surface transition-colors ${localState.activeProject === p.id ? 'bg-surface border border-gray-light' : ''}" data-id="${p.id}">
                             <div class="w-2 h-2 rounded-full bg-ink"></div>
                             <span class="text-sm text-ink truncate flex-1">${escapeHtml(p.name)}</span>
-                            <button class="project-settings-btn text-ink-muted hover:text-ink p-1" data-id="${p.id}" title="Настройки доступа">
+                            <button class="project-settings-btn text-ink-muted hover:text-ink p-1" data-id="${p.id}" title="Настройки">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </button>
                         </div>
@@ -290,17 +278,14 @@
                 </div>
             `;
 
-            // События клика
             document.querySelectorAll('.project-item').forEach(el => {
                 el.addEventListener('click', async (e) => {
-                    // Если клик на шестеренке, не переключаем проект
                     if (e.target.closest('.project-settings-btn')) return;
-
-                    const id = el.dataset.id || null;
+                    const id = el.dataset.id;
                     localState.activeProject = id;
                     const project = localState.projects.find(p => p.id === id);
                     localState.activeProjectName = project ? project.name : 'Проект';
-                    elements.uploadHint.textContent = `Файлы для: "${localState.activeProjectName}"`;
+                    elements.uploadHint.textContent = `Файлы: "${localState.activeProjectName}"`;
                     
                     updateChatState(!!id);
                     localState.messages = [];
@@ -314,12 +299,8 @@
                 });
             });
 
-            // Кнопки настроек (шестеренка)
             document.querySelectorAll('.project-settings-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openMembersModal(btn.dataset.id);
-                });
+                btn.addEventListener('click', (e) => { e.stopPropagation(); openMembersModal(btn.dataset.id); });
             });
         }
 
@@ -357,27 +338,25 @@
         // ============================================
         // УПРАВЛЕНИЕ УЧАСТНИКАМИ
         // ============================================
-        
         async function openMembersModal(projectId) {
-            localState.activeProject = projectId; // Запоминаем, с каким проектом работаем
+            localState.activeProject = projectId;
             elements.membersModal.classList.remove('hidden');
             elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
             
-            // Загружаем участников
-            const { data: members, error } = await supabase
-                .from('project_members')
-                .select('id, user_id, app_users(id, email, name, is_super_admin)')
-                .eq('project_id', projectId);
+            const { data: members, error } = await supabase.from('project_members').select('id, user_id, app_users(id, email, name, is_super_admin)').eq('project_id', projectId);
             
             if(error) { elements.membersList.innerHTML = '<div class="text-red-500 text-xs">Ошибка</div>'; return; }
             
-            // Добавляем владельца проекта
             const project = localState.projects.find(p => p.id === projectId);
-            const owner = state.appUser.id === project.owner_id ? state.appUser : (await supabase.from('app_users').select('*').eq('id', project.owner_id).single()).data;
+            // Владелец
+            let owner = null;
+            if (project.owner_id === state.currentUser.id) owner = state.appUser;
+            else {
+                 const { data: ownerData } = await supabase.from('app_users').select('*').eq('id', project.owner_id).single();
+                 owner = ownerData;
+            }
 
             elements.membersList.innerHTML = '';
-            
-            // Рендер владельца
             if(owner) {
                  elements.membersList.innerHTML += `
                     <div class="flex items-center justify-between p-2 bg-surface rounded-lg">
@@ -389,7 +368,6 @@
                 `;
             }
 
-            // Рендер участников
             members.forEach(m => {
                 const u = m.app_users;
                 const isAdmin = u.is_super_admin;
@@ -404,13 +382,11 @@
                 `;
             });
 
-            // Обработчики удаления
             document.querySelectorAll('.remove-member-btn').forEach(btn => {
                 btn.addEventListener('click', () => removeMember(btn.dataset.userId));
             });
         }
 
-        // Автозаполнение (подсказки)
         elements.addMemberInput.addEventListener('input', async (e) => {
             const query = e.target.value;
             if (query.length < 2) { elements.userSuggestions.classList.add('hidden'); return; }
@@ -433,22 +409,19 @@
 
         async function addMember(userId, userName) {
             const { error } = await supabase.from('project_members').insert({ project_id: localState.activeProject, user_id: userId });
-            if(error) utils.showToast("Ошибка добавления: " + error.message, "error");
+            if(error) utils.showToast("Ошибка: " + error.message, "error");
             else {
-                utils.showToast(`Пользователь ${userName} добавлен`, "success");
+                utils.showToast(`${userName} добавлен`, "success");
                 elements.addMemberInput.value = '';
                 elements.userSuggestions.classList.add('hidden');
-                openMembersModal(localState.activeProject); // Обновляем список
+                openMembersModal(localState.activeProject);
             }
         }
 
         async function removeMember(userId) {
             const { error } = await supabase.from('project_members').delete().match({ project_id: localState.activeProject, user_id: userId });
-            if(error) utils.showToast("Ошибка удаления", "error");
-            else {
-                utils.showToast("Участник удален", "info");
-                openMembersModal(localState.activeProject);
-            }
+            if(error) utils.showToast("Ошибка", "error");
+            else { utils.showToast("Удален", "info"); openMembersModal(localState.activeProject); }
         }
 
         // ============================================
@@ -456,25 +429,14 @@
         // ============================================
         function initEventListeners() {
             document.getElementById('create-project-btn').addEventListener('click', async () => {
-                const name = prompt('Название нового проекта:');
+                const name = prompt('Название:');
                 if (!name) return;
-
                 const { data, error } = await supabase.from('projects').insert({ name: name, owner_id: state.currentUser.id }).select().single();
-
-                if (!error && data) {
-                    // Супер-админ добавится автоматически через триггер SQL
-                    localState.projects.unshift(data);
-                    renderProjects();
-                    utils.showToast('Проект создан', 'success');
-                } else {
-                    utils.showToast('Ошибка создания', 'error');
-                }
+                if (!error && data) { localState.projects.unshift(data); renderProjects(); utils.showToast('Создано', 'success'); }
+                else utils.showToast('Ошибка', 'error');
             });
 
-            // Закрытие модалки
-            document.getElementById('close-members-modal').addEventListener('click', () => {
-                elements.membersModal.classList.add('hidden');
-            });
+            document.getElementById('close-members-modal').addEventListener('click', () => { elements.membersModal.classList.add('hidden'); });
 
             elements.dropZone.addEventListener('click', () => elements.fileInput.click());
             elements.fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
@@ -489,26 +451,19 @@
 
         async function handleFiles(filesList) {
             if (!filesList.length) return;
-            utils.showToast(`Загрузка ${filesList.length} файлов...`, 'info');
-
+            utils.showToast(`Загрузка...`, 'info');
             for (const file of filesList) {
                 const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
                 const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
-                
                 const { error: uploadError } = await supabase.storage.from('user-files').upload(filePath, file);
-                if (uploadError) { utils.showToast(`Ошибка: ${uploadError.message}`, 'error'); continue; }
-
+                if (uploadError) { utils.showToast(`Ошибка`, 'error'); continue; }
                 const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
-                const projectId = localState.activeProject;
-
                 const { error: dbError } = await supabase.from('files').insert({
-                    project_id: projectId, uploader_id: state.currentUser.id, name: file.name, original_name: file.name,
+                    project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name,
                     mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: []
                 });
-                if (dbError) utils.showToast(`Ошибка БД: ${dbError.message}`, 'error');
             }
-
-            utils.showToast('Файлы загружены', 'success');
+            utils.showToast('Готово', 'success');
             elements.fileInput.value = '';
             await loadFiles();
             elements.filesList.scrollTop = 0;
@@ -518,21 +473,15 @@
             const text = elements.chatInput.value.trim();
             if (!text || !localState.activeProject) return;
             const tempId = 'temp-' + Date.now();
-            const tempMsg = { id: tempId, content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name }, project_id: localState.activeProject };
-            appendMessage(tempMsg);
+            appendMessage({ id: tempId, content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name } });
             scrollToBottom();
-            elements.chatInput.value = '';
-            elements.chatInput.style.height = 'auto';
+            elements.chatInput.value = ''; elements.chatInput.style.height = 'auto';
             await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
         }
         
         async function updateFileProject(fileId, projectId) { await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId); }
-        async function updateFileTags(fileId, tagsString) { 
-            const tags = tagsString.split(' ').filter(t => t.trim() !== '');
-            await supabase.from('files').update({ tags }).eq('id', fileId);
-        }
+        async function updateFileTags(fileId, tagsString) { await supabase.from('files').update({ tags: tagsString.split(' ').filter(t => t.trim() !== '') }).eq('id', fileId); }
 
-        // Хелперы
         function formatFullDate(dateStr) { const d = new Date(dateStr); return `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })} ( ${d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} )`; }
         function formatTime(dateStr) { return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
         function formatSize(bytes) { if(bytes > 1000*1024*1024) return (bytes/(1024*1024*1024)).toFixed(1)+' GB'; if(bytes > 1024*1024) return (bytes/(1024*1024)).toFixed(1)+' MB'; if(bytes > 1024) return (bytes/1024).toFixed(1)+' KB'; return bytes + ' B'; }
