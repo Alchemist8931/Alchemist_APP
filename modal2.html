@@ -36,7 +36,7 @@
                 </div>
             </div>
 
-            <!-- Список файлов (отступ 20px между карточками - space-y-5) -->
+            <!-- Список файлов (отступ 20px - space-y-5) -->
             <div class="flex-1 overflow-y-auto p-4 space-y-5" id="files-list">
                 <!-- Файлы подгрузятся здесь -->
             </div>
@@ -74,46 +74,55 @@
     </div>
 </div>
 
-<!-- Шаблон для карточки файла -->
+<!-- Шаблон для карточки файла (Grid 4x2) -->
 <template id="file-card-template">
-    <div class="file-card bg-card rounded-xl p-3 border border-gray-light flex flex-col gap-2 group relative" data-file-id="">
+    <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_250px_1fr_auto] grid-rows-2 gap-x-3 gap-y-1 items-center group relative" data-file-id="">
         
-        <!-- Верхний блок: Иконка + Поля ввода + Кнопка -->
-        <div class="flex items-start gap-3">
-            
-            <!-- Левая часть: Иконка -->
-            <div class="flex-shrink-0 pt-1">
-                <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
-                    <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
-                </div>
-            </div>
-
-            <!-- Центральная часть: Поля ввода (в одну строку с иконкой, друг над другом) -->
-            <div class="flex flex-col gap-2 w-[250px]">
-                <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
-                    <option value="">Мои файлы</option>
-                </select>
-                
-                <div class="relative w-full">
-                    <input type="text" class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags font-sans tracking-normal" placeholder="Тег + пробел">
-                    <div class="hidden absolute left-0 bottom-full mb-1 w-48 bg-surface border border-gray-light rounded shadow-lg text-xs max-h-32 overflow-y-auto z-10 tags-dropdown"></div>
-                </div>
-            </div>
-
-            <!-- Правая часть: Кнопка скачивания (в конце карточки) -->
-            <div class="flex-shrink-0 pt-1 ml-auto">
-                <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors">
-                    <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                </a>
+        <!-- БЛОК 1: Иконка (Col 1, Row 1-2) -->
+        <div class="row-span-2 justify-self-start self-center">
+            <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
+                <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
             </div>
         </div>
 
-        <!-- Нижний блок: Название и Мета-данные -->
-        <div class="min-w-0 pl-0.5">
+        <!-- БЛОК 2: Управление (Col 2) -->
+        <!-- Строка 1: Селект проекта -->
+        <div class="col-start-2 row-start-1">
+            <select class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
+                <option value="">Мои файлы</option>
+            </select>
+        </div>
+        
+        <!-- Строка 2: Теги -->
+        <div class="col-start-2 row-start-2 relative">
+            <input type="text" class="w-full bg-surface border border-gray-light rounded px-2 py-1 text-[11px] text-ink focus:outline-none focus:border-ink/30 input-tags font-sans tracking-normal" placeholder="Тег + пробел">
+            <div class="hidden absolute left-0 bottom-full mb-1 w-48 bg-surface border border-gray-light rounded shadow-lg text-xs max-h-32 overflow-y-auto z-10 tags-dropdown"></div>
+        </div>
+
+        <!-- БЛОК 3: Информация (Col 3) -->
+        <!-- Строка 1: Имя файла -->
+        <div class="col-start-3 row-start-1 min-w-0 self-end">
             <p class="text-xs text-ink font-medium truncate file-name"></p>
+        </div>
+        
+        <!-- Строка 2: Пользователь и Дата -->
+        <div class="col-start-3 row-start-2 self-start">
             <p class="text-[10px] text-ink-muted file-meta"></p>
+        </div>
+
+        <!-- БЛОК 4: Действия (Col 4) -->
+        <!-- Строка 1: Кнопка скачивания -->
+        <div class="col-start-4 row-start-1 justify-self-end self-end">
+            <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors">
+                <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+            </a>
+        </div>
+        
+        <!-- Строка 2: Вес файла -->
+        <div class="col-start-4 row-start-2 justify-self-end self-start">
+             <p class="text-[10px] text-ink-muted file-size"></p>
         </div>
 
         <!-- Индикатор сохранения -->
@@ -414,13 +423,24 @@
                 
                 card.dataset.fileId = f.id;
                 
+                // Иконка
                 clone.querySelector('.ext-icon').textContent = getExtension(f.name);
-                clone.querySelector('.file-name').textContent = f.name;
-                clone.querySelector('.file-meta').textContent = `${f.profiles?.name || 'User'} • ${formatDate(f.created_at)} • ${formatBytes(f.size)}`;
                 
+                // Имя файла
+                clone.querySelector('.file-name').textContent = f.name;
+                
+                // Мета-данные: User • Date (Time)
+                const dateStr = formatFullDate(f.created_at);
+                clone.querySelector('.file-meta').textContent = `${f.profiles?.name || 'User'} • ${dateStr}`;
+                
+                // Размер файла (новый элемент)
+                clone.querySelector('.file-size').textContent = formatSize(f.size);
+                
+                // Ссылка
                 const downloadBtn = clone.querySelector('a');
                 downloadBtn.href = f.storage_path;
 
+                // Проекты
                 const select = clone.querySelector('.select-project');
                 select.innerHTML = '<option value="">Мои файлы</option>';
                 localState.projects.forEach(p => {
@@ -431,6 +451,7 @@
                 });
                 select.value = f.project_id || "";
 
+                // Теги
                 const inputTags = clone.querySelector('.input-tags');
                 inputTags.value = (f.tags || []).join(' ');
                 
@@ -443,7 +464,6 @@
         }
         
         function appendMessage(msg) {
-            // Удаляем временное сообщение, если пришло реальное
             const tempMessages = elements.chatMessages.querySelectorAll('.temp-message');
             tempMessages.forEach(el => el.remove());
 
@@ -578,7 +598,6 @@
             utils.showToast('Файлы загружены', 'success');
             elements.fileInput.value = '';
             
-            // Обновляем список и скроллим вверх
             await loadFiles();
             elements.filesList.scrollTop = 0;
         }
@@ -701,27 +720,56 @@
             }
         }
 
+        // ============================================
+        // ХЕЛПЕРЫ
+        // ============================================
         function getExtension(filename) {
             const parts = filename.split('.');
             return parts.length > 1 ? parts.pop().substring(0, 4).toUpperCase() : 'FILE';
         }
 
-        function formatDate(dateStr) {
+        // Формат: 03 апреля 2026 г. ( 15:47 )
+        function formatFullDate(dateStr) {
             const d = new Date(dateStr);
-            return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+            const datePart = d.toLocaleDateString('ru-RU', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            }); // "3 апреля 2026 г."
+            const timePart = d.toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }); // "15:47"
+            return `${datePart} ( ${timePart} )`;
         }
-        
+
         function formatTime(dateStr) {
             const d = new Date(dateStr);
             return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
         
-        function formatBytes(bytes) {
-            if(bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        // Размер: МБ если < 1000, иначе ГБ. До десятых.
+        function formatSize(bytes) {
+            const MB = 1024 * 1024;
+            const GB = 1024 * MB;
+            
+            if (bytes >= GB) {
+                // Если больше или равно 1 ГБ (1024 МБ), или строго > 1000 МБ по запросу?
+                // Запрос: "если файл больше чем 1000 мб"
+                if (bytes > 1000 * MB) {
+                    return (bytes / GB).toFixed(1) + ' GB';
+                }
+            }
+            
+            if (bytes >= MB) {
+                return (bytes / MB).toFixed(1) + ' MB';
+            }
+            
+            if (bytes >= 1024) {
+                return (bytes / 1024).toFixed(1) + ' KB';
+            }
+            
+            return bytes + ' B';
         }
 
         function scrollToBottom() {
