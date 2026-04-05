@@ -3,33 +3,24 @@
     Страница: Проекты, Файлы, Чат
 -->
 <div class="w-full h-[calc(100vh-64px)] overflow-hidden flex justify-center bg-surface-bright/20">
-    
-    <!-- Контейнер 1600px -->
     <div class="w-[1600px] h-full flex border-l border-r border-gray-light bg-surface-bright">
-        
-        <!-- ЛЕВАЯ ПАНЕЛЬ: Проекты -->
+        <!-- ЛЕВАЯ ПАНЕЛЬ -->
         <aside class="w-[300px] flex-shrink-0 border-r border-gray-light flex flex-col">
             <div class="p-4 border-b border-gray-light flex items-center justify-between">
                 <h2 class="font-display font-semibold text-ink">Проекты</h2>
                 <button id="create-project-btn" class="w-8 h-8 rounded-lg border border-gray-light hover:border-ink/30 hover:bg-surface flex items-center justify-center transition-colors" title="Новый проект">
-                    <svg class="w-4 h-4 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
+                    <svg class="w-4 h-4 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto p-2" id="projects-list">
-                <div class="text-center py-10 text-ink-muted text-xs">Загрузка...</div>
-            </div>
+            <div class="flex-1 overflow-y-auto p-2" id="projects-list"><div class="text-center py-10 text-ink-muted text-xs">Загрузка...</div></div>
         </aside>
 
-        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: Файлы -->
+        <!-- ЦЕНТРАЛЬНАЯ ПАНЕЛЬ -->
         <main class="flex-1 min-w-0 flex flex-col">
             <div class="p-4 border-b border-gray-light">
                 <div id="drop-zone" class="border-2 border-dashed border-gray-light rounded-xl p-4 text-center cursor-pointer hover:border-ink/20 transition-colors">
                     <input type="file" id="file-input" multiple class="hidden">
-                    <svg class="w-6 h-6 text-ink-muted mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                    </svg>
+                    <svg class="w-6 h-6 text-ink-muted mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                     <p class="text-xs text-ink-light">Перетащите файлы или кликните для выбора</p>
                     <p class="text-[10px] text-ink-muted mt-1" id="upload-hint">Выберите проект слева</p>
                 </div>
@@ -37,25 +28,18 @@
             <div class="flex-1 overflow-y-auto p-4 space-y-5" id="files-list"></div>
         </main>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ: Чат -->
+        <!-- ПРАВАЯ ПАНЕЛЬ -->
         <aside class="w-[600px] flex-shrink-0 border-l border-gray-light flex flex-col bg-surface-bright/30">
             <div class="p-4 border-b border-gray-light">
                 <h2 class="font-display font-semibold text-ink">Чат проекта</h2>
                 <p class="text-xs text-ink-muted mt-1" id="chat-project-name">Выберите проект</p>
             </div>
-            
-            <!-- Сообщения -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col" id="chat-messages"></div>
-            
-            <!-- Поле ввода -->
             <div class="p-4 border-t border-gray-light bg-surface-bright/50">
                 <div class="flex items-end gap-2">
-                    <textarea id="chat-input" placeholder="Выберите проект..." 
-                        class="flex-1 bg-surface border border-gray-light rounded-lg px-4 py-2 text-sm text-ink focus:outline-none focus:border-ink/30 disabled:opacity-50 font-sans tracking-normal resize-none overflow-hidden" rows="1" disabled></textarea>
+                    <textarea id="chat-input" placeholder="Выберите проект..." class="flex-1 bg-surface border border-gray-light rounded-lg px-4 py-2 text-sm text-ink focus:outline-none focus:border-ink/30 disabled:opacity-50 font-sans tracking-normal resize-none overflow-hidden" rows="1" disabled></textarea>
                     <button id="send-msg-btn" class="btn-primary h-[38px] w-[38px] rounded-lg text-surface-bright disabled:opacity-50 flex items-center justify-center flex-shrink-0" disabled>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     </button>
                 </div>
             </div>
@@ -63,7 +47,7 @@
     </div>
 </div>
 
-<!-- Модальные окна (без изменений) -->
+<!-- Модальные окна -->
 <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-card rounded-xl border border-gray-light w-full max-w-sm p-6 shadow-2xl">
         <h3 id="confirm-modal-title" class="text-lg font-semibold text-ink mb-2">Подтверждение</h3>
@@ -79,9 +63,7 @@
     <div class="bg-card rounded-xl border border-gray-light w-full max-w-md p-6 shadow-2xl">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-ink">Новый проект</h3>
-            <button id="close-create-modal" class="text-ink-muted hover:text-ink">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            <button id="close-create-modal" class="text-ink-muted hover:text-ink"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <div class="mb-6">
             <label class="text-xs text-ink-muted block mb-2">Название проекта</label>
@@ -98,9 +80,7 @@
     <div class="bg-card rounded-xl border border-gray-light w-full max-w-md p-6 shadow-2xl">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-ink">Участники проекта</h3>
-            <button id="close-members-modal" class="text-ink-muted hover:text-ink">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            <button id="close-members-modal" class="text-ink-muted hover:text-ink"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <div id="members-list" class="space-y-2 mb-4 max-h-40 overflow-y-auto"></div>
         <div class="border-t border-gray-light pt-4 mb-4 relative">
@@ -120,49 +100,21 @@
 <!-- Шаблон файла -->
 <template id="file-card-template">
     <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_1fr_220px_auto] grid-rows-2 gap-x-3 gap-y-2 items-center group relative" data-file-id="">
-        <div class="row-span-2 justify-self-start self-center">
-            <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
-                <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
-            </div>
-        </div>
+        <div class="row-span-2 justify-self-start self-center"><div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center"><span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span></div></div>
         <div class="col-start-2 row-start-1 min-w-0 self-end"><p class="text-xs text-ink font-medium truncate file-name"></p></div>
-        <div class="col-start-2 row-start-2 flex items-center gap-2 self-start">
-            <p class="text-[10px] text-ink-muted file-meta"></p>
-            <p class="text-[10px] text-ink-muted file-size"></p>
-        </div>
-        <div class="col-start-3 row-start-1 self-end">
-            <select class="h-7 w-full bg-surface border border-gray-light rounded px-2 text-[10px] text-ink focus:outline-none focus:border-ink/30 select-project truncate"><option value="">Без проекта</option></select>
-        </div>
-        <div class="col-start-3 row-start-2 self-start">
-             <div class="tags-container w-full min-h-[28px] bg-surface border border-gray-light rounded px-1 py-0.5 flex flex-wrap items-center gap-1 cursor-text">
-                <input type="text" class="tag-input flex-1 min-w-[60px] border-none outline-none bg-transparent text-[10px] text-ink py-0.5" placeholder="Тег + Enter">
-            </div>
-        </div>
-        <div class="col-start-4 row-start-1 self-end">
-            <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors" title="Скачать">
-                <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            </a>
-        </div>
-        <div class="col-start-4 row-start-2 self-start">
-            <button class="delete-file-btn hidden w-7 h-7 rounded border border-red-500/30 hover:bg-red-500/10 flex items-center justify-center transition-colors" title="Удалить файл">
-                <svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-        </div>
+        <div class="col-start-2 row-start-2 flex items-center gap-2 self-start"><p class="text-[10px] text-ink-muted file-meta"></p><p class="text-[10px] text-ink-muted file-size"></p></div>
+        <div class="col-start-3 row-start-1 self-end"><select class="h-7 w-full bg-surface border border-gray-light rounded px-2 text-[10px] text-ink focus:outline-none focus:border-ink/30 select-project truncate"><option value="">Без проекта</option></select></div>
+        <div class="col-start-3 row-start-2 self-start"><div class="tags-container w-full min-h-[28px] bg-surface border border-gray-light rounded px-1 py-0.5 flex flex-wrap items-center gap-1 cursor-text"><input type="text" class="tag-input flex-1 min-w-[60px] border-none outline-none bg-transparent text-[10px] text-ink py-0.5" placeholder="Тег + Enter"></div></div>
+        <div class="col-start-4 row-start-1 self-end"><a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors" title="Скачать"><svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></a></div>
+        <div class="col-start-4 row-start-2 self-start"><button class="delete-file-btn hidden w-7 h-7 rounded border border-red-500/30 hover:bg-red-500/10 flex items-center justify-center transition-colors" title="Удалить файл"><svg class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
     </div>
 </template>
 
-<style>
-    .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(229, 229, 229, 0.1); border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #E5E5E5; white-space: nowrap; }
-    .tag-chip-remove { cursor: pointer; opacity: 0.5; line-height: 1; }
-    .tag-chip-remove:hover { opacity: 1; color: #EF4444; }
-</style>
+<style>.tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(229, 229, 229, 0.1); border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #E5E5E5; white-space: nowrap; } .tag-chip-remove { cursor: pointer; opacity: 0.5; line-height: 1; } .tag-chip-remove:hover { opacity: 1; color: #EF4444; }</style>
 
 <script>
 (function() {
-    function waitForGlobals(callback) {
-        if (window.AppState && window.supabase && window.Utils) callback();
-        else setTimeout(() => waitForGlobals(callback), 100);
-    }
+    function waitForGlobals(callback) { if (window.AppState && window.supabase && window.Utils) callback(); else setTimeout(() => waitForGlobals(callback), 100); }
 
     waitForGlobals(() => {
         const state = window.AppState;
@@ -170,49 +122,25 @@
         const utils = window.Utils;
         
         const localState = {
-            projects: [],
-            files: [],
-            messages: [],
-            activeProject: null, 
-            activeProjectOwner: null,
-            activeProjectName: null,
-            isSuperAdmin: state.appUser?.is_super_admin || false,
-            realtimeChannel: null,
-            isLoadingMessages: false,
-            hasMoreMessages: true,
-            oldestMessageDate: null,
-            allTags: new Set(),
-            confirmCallback: null,
-            fileRefreshInterval: null, // Таймер для обновления файлов
-            knownAuthors: {} // Кэш имен авторов {id: name}
+            projects: [], files: [], messages: [], activeProject: null, activeProjectOwner: null, activeProjectName: null,
+            isSuperAdmin: state.appUser?.is_super_admin || false, realtimeChannel: null, isLoadingMessages: false,
+            hasMoreMessages: true, oldestMessageDate: null, allTags: new Set(), confirmCallback: null,
+            fileRefreshInterval: null, knownAuthors: {} // Кэш авторов
         };
 
         const elements = {
-            projectsList: document.getElementById('projects-list'),
-            filesList: document.getElementById('files-list'),
-            chatMessages: document.getElementById('chat-messages'),
-            chatInput: document.getElementById('chat-input'),
-            dropZone: document.getElementById('drop-zone'),
-            fileInput: document.getElementById('file-input'),
-            chatProjectName: document.getElementById('chat-project-name'),
-            uploadHint: document.getElementById('upload-hint'),
-            sendBtn: document.getElementById('send-msg-btn'),
-            membersModal: document.getElementById('members-modal'),
-            membersList: document.getElementById('members-list'),
-            addMemberInput: document.getElementById('add-member-input'),
-            userSuggestions: document.getElementById('user-suggestions'),
-            createModal: document.getElementById('create-project-modal'),
-            createModalInput: document.getElementById('new-project-name-input'),
-            deleteProjectSection: document.getElementById('delete-project-section'),
-            confirmModal: document.getElementById('confirm-modal'),
-            confirmModalMsg: document.getElementById('confirm-modal-message'),
-            confirmModalOk: document.getElementById('confirm-modal-ok'),
-            confirmModalCancel: document.getElementById('confirm-modal-cancel')
+            projectsList: document.getElementById('projects-list'), filesList: document.getElementById('files-list'),
+            chatMessages: document.getElementById('chat-messages'), chatInput: document.getElementById('chat-input'),
+            dropZone: document.getElementById('drop-zone'), fileInput: document.getElementById('file-input'),
+            chatProjectName: document.getElementById('chat-project-name'), uploadHint: document.getElementById('upload-hint'),
+            sendBtn: document.getElementById('send-msg-btn'), membersModal: document.getElementById('members-modal'),
+            membersList: document.getElementById('members-list'), addMemberInput: document.getElementById('add-member-input'),
+            userSuggestions: document.getElementById('user-suggestions'), createModal: document.getElementById('create-project-modal'),
+            createModalInput: document.getElementById('new-project-name-input'), deleteProjectSection: document.getElementById('delete-project-section'),
+            confirmModal: document.getElementById('confirm-modal'), confirmModalMsg: document.getElementById('confirm-modal-message'),
+            confirmModalOk: document.getElementById('confirm-modal-ok'), confirmModalCancel: document.getElementById('confirm-modal-cancel')
         };
 
-        // ============================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ============================================
         async function init() {
             await loadProjects();
             await loadAllTags();
@@ -221,164 +149,116 @@
             initEventListeners();
         }
 
-        // ============================================
-        // ЗАГРУЗКА ДАННЫХ
-        // ============================================
-        
         async function loadProjects() {
-            let data = null;
-            let error = null;
-
+            let data = null; let error = null;
             const rpcResult = await supabase.rpc('get_accessible_projects');
-            
             if (rpcResult.error) {
-                console.warn("RPC failed, fallback", rpcResult.error);
+                console.warn("RPC fallback", rpcResult.error);
                 const fallbackResult = await supabase.from('projects').select('*').eq('owner_id', state.currentUser.id).order('created_at', { ascending: false });
-                data = fallbackResult.data;
-                error = fallbackResult.error;
+                data = fallbackResult.data; error = fallbackResult.error;
                 if (!error) localState.isSuperAdmin = false;
-            } else {
-                data = rpcResult.data;
-                error = rpcResult.error;
-            }
-
-            if (error) {
-                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`;
-                return;
-            }
-
+            } else { data = rpcResult.data; error = rpcResult.error; }
+            if (error) { elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`; return; }
             localState.projects = data || [];
             renderProjects();
         }
 
-        async function loadAllTags() {
-            const { data: files } = await supabase.from('files').select('tags');
-            if(files) files.forEach(f => { if(f.tags) f.tags.forEach(t => localState.allTags.add(t)); });
-        }
-
-        // Обертка для loadFiles с защитой от параллельных запросов
+        async function loadAllTags() { const { data: files } = await supabase.from('files').select('tags'); if(files) files.forEach(f => { if(f.tags) f.tags.forEach(t => localState.allTags.add(t)); }); }
+        
         let isLoadingFilesNow = false;
         async function loadFiles() {
             if (!localState.activeProject || isLoadingFilesNow) return;
             isLoadingFilesNow = true;
-
             const [filesRes, projectRes] = await Promise.all([
                 supabase.from('files').select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email), uploader_id').eq('project_id', localState.activeProject).order('created_at', { ascending: false }),
                 supabase.from('projects').select('owner_id').eq('id', localState.activeProject).single()
             ]);
-
             if (filesRes.error) { console.error(filesRes.error); isLoadingFilesNow = false; return; }
-            
-            // Проверка, не изменился ли проект за время загрузки
-            if (localState.activeProject !== projectRes.data?.owner_id && localState.activeProject !== projectRes.data?.id) {
-                isLoadingFilesNow = false; return;
-            }
-
             localState.files = filesRes.data || [];
             if (!projectRes.error) localState.activeProjectOwner = projectRes.data?.owner_id;
-            
             renderFiles();
             isLoadingFilesNow = false;
         }
 
-        // ============================================
-        // ЧАТ ЛОГИКА
-        // ============================================
         function updateChatState(isActive) {
-            elements.chatInput.disabled = !isActive;
-            elements.sendBtn.disabled = !isActive;
-            if (!isActive) {
-                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`;
-                elements.chatProjectName.textContent = "Выберите проект";
-            } else {
-                elements.chatProjectName.textContent = localState.activeProjectName;
-                elements.chatInput.placeholder = "Написать сообщение...";
-            }
+            elements.chatInput.disabled = !isActive; elements.sendBtn.disabled = !isActive;
+            if (!isActive) { elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; elements.chatProjectName.textContent = "Выберите проект"; }
+            else { elements.chatProjectName.textContent = localState.activeProjectName; elements.chatInput.placeholder = "Написать сообщение..."; }
         }
 
         async function loadMessages(initial = true) {
             if (localState.isLoadingMessages) return;
             if (!initial && !localState.hasMoreMessages) return;
             localState.isLoadingMessages = true;
-            
             let query = supabase.from('messages').select('id, content, created_at, sender_id, author:sender_id(name, email)').eq('project_id', localState.activeProject).order('created_at', { ascending: false });
             if (!initial && localState.oldestMessageDate) query = query.lt('created_at', localState.oldestMessageDate);
             query = query.limit(initial ? 50 : 30);
-            
             const { data, error } = await query;
             if (error) { localState.isLoadingMessages = false; return; }
             if (data.length === 0) { localState.hasMoreMessages = false; localState.isLoadingMessages = false; if(initial) elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs">Нет сообщений</div>`; return; }
-            
             data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            
-            // Кэшируем авторов при загрузке истории
-            data.forEach(m => {
-                if(m.author) localState.knownAuthors[m.sender_id] = m.author.name;
-            });
-
-            if (initial) { 
-                localState.messages = data; 
-                renderMessages(); 
-                scrollToBottom(); 
-            } else {
-                const prevScrollHeight = elements.chatMessages.scrollHeight;
-                localState.messages = [...data, ...localState.messages];
-                renderMessages();
-                elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight - prevScrollHeight;
-            }
-            
+            // Кэшируем имена авторов при загрузке истории
+            data.forEach(m => { if(m.author) localState.knownAuthors[m.sender_id] = m.author.name; });
+            if (initial) { localState.messages = data; renderMessages(); scrollToBottom(); } 
+            else { const prevScrollHeight = elements.chatMessages.scrollHeight; localState.messages = [...data, ...localState.messages]; renderMessages(); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight - prevScrollHeight; }
             localState.oldestMessageDate = localState.messages[0]?.created_at;
             localState.hasMoreMessages = true;
             localState.isLoadingMessages = false;
         }
 
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ
         async function subscribeToChat(projectId) {
+            // 1. Полностью закрываем старый канал
             if (localState.realtimeChannel) {
-                try { await localState.realtimeChannel.unsubscribe(); } catch(e) {}
+                try { 
+                    await localState.realtimeChannel.unsubscribe(); 
+                    supabase.removeChannel(localState.realtimeChannel); 
+                } catch(e) { console.warn("Cleanup error", e); }
                 localState.realtimeChannel = null;
             }
 
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // 2. Пауза критически важна для сброса состояния SDK
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            try {
-                const channel = supabase.channel(`chat:${projectId}`, { config: { broadcast: { self: true } } });
+            // 3. Создаем канал
+            const channel = supabase.channel(`chat:${projectId}`);
 
-                channel.on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `project_id=eq.${projectId}`
-                }, async (payload) => {
-                    const msg = payload.new;
-                    
-                    // Самоустранившаяся проблема с автором: payload.new не содержит джойнов.
-                    // Если это я -> ставим мое имя.
-                    if(msg.sender_id === state.currentUser.id) {
-                        msg.author = { name: state.appUser.name };
-                    } else {
-                        // Иначе ищем в кэше или загружаем
-                        if (!localState.knownAuthors[msg.sender_id]) {
-                             const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
-                             localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
-                        }
-                        msg.author = { name: localState.knownAuthors[msg.sender_id] };
+            // 4. Регистрируем обработчик ДО подписки
+            channel.on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `project_id=eq.${projectId}`
+            }, async (payload) => {
+                const msg = payload.new;
+                
+                // Realtime присылает только sender_id, нужно найти имя
+                if (msg.sender_id === state.currentUser.id) {
+                    msg.author = { name: state.appUser.name };
+                } else {
+                    // Если имени нет в кэше, запрашиваем у БД
+                    if (!localState.knownAuthors[msg.sender_id]) {
+                         const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
+                         localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
                     }
+                    msg.author = { name: localState.knownAuthors[msg.sender_id] };
+                }
 
-                    localState.messages.push(msg);
-                    appendMessage(msg);
-                    scrollToBottom();
-                });
+                localState.messages.push(msg);
+                appendMessage(msg);
+                scrollToBottom();
+            });
 
+            // 5. Подписываемся
+            try {
                 await channel.subscribe();
                 localState.realtimeChannel = channel;
+                console.log("Realtime subscribed successfully");
             } catch(e) {
-                console.error("Realtime subscription error", e);
+                console.error("Realtime subscription failed", e);
             }
         }
 
-        // ============================================
-        // РЕНДЕРИНГ
-        // ============================================
         function renderProjects() {
             elements.projectsList.innerHTML = `
                 <div class="p-2 mb-2 text-xs text-ink-muted uppercase tracking-wider">Проекты ${localState.isSuperAdmin ? '<span class="text-green-500">(Admin)</span>' : ''}</div>
@@ -396,27 +276,13 @@
                     `).join('')}
                 </div>
             `;
-
-            document.querySelectorAll('.project-item').forEach(el => {
-                el.addEventListener('click', async (e) => {
-                    if (e.target.closest('.project-settings-btn')) return;
-                    selectProject(el.dataset.id);
-                });
-            });
-
-            document.querySelectorAll('.project-settings-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => { e.stopPropagation(); openMembersModal(btn.dataset.id); });
-            });
+            document.querySelectorAll('.project-item').forEach(el => { el.addEventListener('click', async (e) => { if (e.target.closest('.project-settings-btn')) return; selectProject(el.dataset.id); }); });
+            document.querySelectorAll('.project-settings-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); openMembersModal(btn.dataset.id); }); });
         }
 
         async function selectProject(id) {
             if (localState.activeProject === id) return;
-
-            // Очищаем предыдущий таймер обновления файлов
-            if (localState.fileRefreshInterval) {
-                clearInterval(localState.fileRefreshInterval);
-                localState.fileRefreshInterval = null;
-            }
+            if (localState.fileRefreshInterval) { clearInterval(localState.fileRefreshInterval); localState.fileRefreshInterval = null; }
 
             localState.activeProject = id;
             const project = localState.projects.find(p => p.id === id);
@@ -432,15 +298,10 @@
             if(id) { 
                 await loadMessages(true); 
                 await subscribeToChat(id); 
-                await loadFiles(); // Первичная загрузка
-                
-                // Запускаем автообновление файлов каждые 5 сек
+                await loadFiles();
                 localState.fileRefreshInterval = setInterval(() => loadFiles(), 5000);
             } else { 
-                if(localState.realtimeChannel) {
-                    await localState.realtimeChannel.unsubscribe();
-                    localState.realtimeChannel = null;
-                }
+                if(localState.realtimeChannel) { try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) {} localState.realtimeChannel = null; }
                 elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; 
             }
             renderProjects();
@@ -450,9 +311,7 @@
             if (localState.files.length === 0) { elements.filesList.innerHTML = `<div class="text-center py-20 text-ink-muted text-sm">Нет файлов</div>`; return; }
             const template = document.getElementById('file-card-template');
             elements.filesList.innerHTML = '';
-            
             const canDelete = localState.isSuperAdmin || (localState.activeProjectOwner === state.currentUser.id);
-
             localState.files.forEach(f => {
                 const clone = template.content.cloneNode(true);
                 clone.querySelector('.ext-icon').textContent = f.name.split('.').pop().toUpperCase().substring(0,4);
@@ -460,312 +319,137 @@
                 clone.querySelector('.file-meta').textContent = `${f.profiles?.name || 'User'}`;
                 clone.querySelector('.file-size').textContent = formatSize(f.size);
                 clone.querySelector('a').href = f.storage_path;
-                
                 const select = clone.querySelector('.select-project');
                 select.innerHTML = '<option value="">Без проекта</option>';
-                localState.projects.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name;
-                    if (p.id === f.project_id) opt.selected = true;
-                    select.appendChild(opt);
-                });
+                localState.projects.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name; if (p.id === f.project_id) opt.selected = true; select.appendChild(opt); });
                 select.value = f.project_id || "";
-
                 const tagsContainer = clone.querySelector('.tags-container');
                 const tagsInput = clone.querySelector('.tag-input');
-                
                 renderFileTags(tagsContainer, f.id);
-
                 const delBtn = clone.querySelector('.delete-file-btn');
-                if (canDelete) {
-                    delBtn.classList.remove('hidden');
-                    delBtn.addEventListener('click', () => handleDeleteFile(f.id, f.storage_path, f.name));
-                }
-
+                if (canDelete) { delBtn.classList.remove('hidden'); delBtn.addEventListener('click', () => handleDeleteFile(f.id, f.storage_path, f.name)); }
                 select.addEventListener('change', (e) => updateFileProject(f.id, e.target.value));
-                tagsInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const val = tagsInput.value.trim();
-                        if (val) {
-                            handleAddTag(f.id, val, tagsContainer);
-                            tagsInput.value = '';
-                        }
-                    }
-                });
-
-                tagsContainer.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('tag-chip-remove')) tagsInput.focus();
-                });
-
+                tagsInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const val = tagsInput.value.trim(); if (val) { handleAddTag(f.id, val, tagsContainer); tagsInput.value = ''; } } });
+                tagsContainer.addEventListener('click', (e) => { if (!e.target.classList.contains('tag-chip-remove')) tagsInput.focus(); });
                 elements.filesList.appendChild(clone);
             });
         }
 
         function renderFileTags(container, fileId) {
-            const file = localState.files.find(f => f.id === fileId);
-            if (!file) return;
+            const file = localState.files.find(f => f.id === fileId); if (!file) return;
             const tags = file.tags || [];
             container.querySelectorAll('.tag-chip').forEach(el => el.remove());
             const input = container.querySelector('.tag-input');
             tags.forEach(tag => {
-                const chip = document.createElement('span');
-                chip.className = 'tag-chip';
+                const chip = document.createElement('span'); chip.className = 'tag-chip';
                 chip.innerHTML = `${escapeHtml(tag)} <span class="tag-chip-remove" data-tag="${escapeHtml(tag)}">×</span>`;
                 container.insertBefore(chip, input);
-                chip.querySelector('.tag-chip-remove').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    handleRemoveTag(fileId, tag, container);
-                });
+                chip.querySelector('.tag-chip-remove').addEventListener('click', (e) => { e.stopPropagation(); handleRemoveTag(fileId, tag, container); });
             });
         }
 
-        async function handleAddTag(fileId, tagName, container) {
-            const file = localState.files.find(f => f.id === fileId);
-            if (!file) return;
-            const currentTags = file.tags || [];
-            if (currentTags.includes(tagName)) return;
-            const newTags = [...currentTags, tagName];
-            file.tags = newTags;
-            renderFileTags(container, fileId);
-            await updateFileTags(fileId, newTags);
-        }
-
-        async function handleRemoveTag(fileId, tagName, container) {
-            const file = localState.files.find(f => f.id === fileId);
-            if (!file) return;
-            const currentTags = file.tags || [];
-            const newTags = currentTags.filter(t => t !== tagName);
-            file.tags = newTags;
-            renderFileTags(container, fileId);
-            await updateFileTags(fileId, newTags);
-        }
+        async function handleAddTag(fileId, tagName, container) { const file = localState.files.find(f => f.id === fileId); if (!file) return; const currentTags = file.tags || []; if (currentTags.includes(tagName)) return; const newTags = [...currentTags, tagName]; file.tags = newTags; renderFileTags(container, fileId); await updateFileTags(fileId, newTags); }
+        async function handleRemoveTag(fileId, tagName, container) { const file = localState.files.find(f => f.id === fileId); if (!file) return; const currentTags = file.tags || []; const newTags = currentTags.filter(t => t !== tagName); file.tags = newTags; renderFileTags(container, fileId); await updateFileTags(fileId, newTags); }
         
-        function appendMessage(msg) {
-            elements.chatMessages.querySelectorAll('.temp-message').forEach(el => el.remove());
-            elements.chatMessages.insertAdjacentHTML('beforeend', createMessageHTML(msg));
-        }
-        
+        function appendMessage(msg) { elements.chatMessages.querySelectorAll('.temp-message').forEach(el => el.remove()); elements.chatMessages.insertAdjacentHTML('beforeend', createMessageHTML(msg)); }
         function renderMessages() { elements.chatMessages.innerHTML = localState.messages.map(m => createMessageHTML(m)).join(''); }
+        function createMessageHTML(m) { return `<div class="message-item p-2 rounded-lg hover:bg-surface/50"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-surface border border-gray-light flex-shrink-0 flex items-center justify-center text-[8px] text-ink-muted">${m.author?.name ? escapeHtml(m.author.name.charAt(0).toUpperCase()) : 'U'}</div><div class="flex-1"><div class="flex items-baseline gap-2"><span class="text-[11px] font-semibold text-ink">${escapeHtml(m.author?.name || 'System')}</span><span class="text-[9px] text-ink-muted">${formatTime(m.created_at)}</span></div><p class="text-xs text-ink-light mt-0.5 whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`; }
+
+        function showConfirmModal(message, callback) { elements.confirmModalMsg.textContent = message; elements.confirmModal.classList.remove('hidden'); localState.confirmCallback = callback; }
+        async function updateFileProject(fileId, projectId) { const { error } = await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId); if (error) utils.showToast("Ошибка обновления", "error"); }
+        async function updateFileTags(fileId, tags) { const { error } = await supabase.from('files').update({ tags }).eq('id', fileId).select(); if(error) utils.showToast("Ошибка тегов", "error"); else { const file = localState.files.find(f => f.id === fileId); if(file) file.tags = tags; } }
         
-        function createMessageHTML(m) {
-            return `<div class="message-item p-2 rounded-lg hover:bg-surface/50"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-surface border border-gray-light flex-shrink-0 flex items-center justify-center text-[8px] text-ink-muted">${m.author?.name ? escapeHtml(m.author.name.charAt(0).toUpperCase()) : 'U'}</div><div class="flex-1"><div class="flex items-baseline gap-2"><span class="text-[11px] font-semibold text-ink">${escapeHtml(m.author?.name || 'System')}</span><span class="text-[9px] text-ink-muted">${formatTime(m.created_at)}</span></div><p class="text-xs text-ink-light mt-0.5 whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
-        }
-
-        // ============================================
-        // ДЕЙСТВИЯ
-        // ============================================
-
-        function showConfirmModal(message, callback) {
-            elements.confirmModalMsg.textContent = message;
-            elements.confirmModal.classList.remove('hidden');
-            localState.confirmCallback = callback;
-        }
-
-        async function updateFileProject(fileId, projectId) {
-            const { error } = await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId);
-            if (error) utils.showToast("Ошибка обновления проекта", "error");
-        }
-
-        async function updateFileTags(fileId, tags) {
-            const { data, error } = await supabase.from('files').update({ tags }).eq('id', fileId).select();
-            if(error) utils.showToast(`Ошибка сохранения тегов`, "error");
-            else {
-                const file = localState.files.find(f => f.id === fileId);
-                if(file) file.tags = tags;
-            }
-        }
-
         async function handleDeleteProject(projectId) {
             showConfirmModal('Удалить проект и все файлы?', async () => {
-                utils.showToast('Удаление проекта...', 'info');
+                utils.showToast('Удаление...', 'info');
                 const { data: files } = await supabase.from('files').select('storage_path').eq('project_id', projectId);
-                if (files && files.length > 0) {
-                    const storagePaths = files.map(p => {
-                        try { return decodeURIComponent(new URL(p.storage_path).pathname.split('/user-files/')[1]); } catch { return null; }
-                    }).filter(Boolean);
-                    if (storagePaths.length > 0) await supabase.storage.from('user-files').remove(storagePaths);
-                }
+                if (files && files.length > 0) { const storagePaths = files.map(p => { try { return decodeURIComponent(new URL(p.storage_path).pathname.split('/user-files/')[1]); } catch { return null; } }).filter(Boolean); if (storagePaths.length > 0) await supabase.storage.from('user-files').remove(storagePaths); }
                 const { error } = await supabase.from('projects').delete().eq('id', projectId);
                 if (error) utils.showToast('Ошибка: ' + error.message, "error");
-                else {
-                    localState.projects = localState.projects.filter(p => p.id !== projectId);
-                    elements.membersModal.classList.add('hidden');
-                    if (localState.activeProject === projectId) selectProject(null);
-                    renderProjects();
-                    utils.showToast('Проект удален', 'success');
-                }
+                else { localState.projects = localState.projects.filter(p => p.id !== projectId); elements.membersModal.classList.add('hidden'); if (localState.activeProject === projectId) selectProject(null); renderProjects(); utils.showToast('Удалено', 'success'); }
             });
         }
 
         async function handleDeleteFile(fileId, storageUrl, fileName) {
-            showConfirmModal(`Удалить файл "${fileName}"?`, async () => {
-                try {
-                    const filePath = decodeURIComponent(new URL(storageUrl).pathname.split('/user-files/')[1]);
-                    await supabase.storage.from('user-files').remove([filePath]);
-                } catch (e) { console.warn("Storage delete error", e); }
+            showConfirmModal(`Удалить "${fileName}"?`, async () => {
+                try { const filePath = decodeURIComponent(new URL(storageUrl).pathname.split('/user-files/')[1]); await supabase.storage.from('user-files').remove([filePath]); } catch (e) { console.warn(e); }
                 const { error } = await supabase.from('files').delete().eq('id', fileId);
-                if (error) utils.showToast('Ошибка удаления', 'error');
-                else {
-                    await logFileAction('delete', fileName);
-                    localState.files = localState.files.filter(f => f.id !== fileId);
-                    renderFiles();
-                    utils.showToast('Файл удален', 'success');
-                }
+                if (error) utils.showToast('Ошибка', 'error');
+                else { await logFileAction('delete', fileName); localState.files = localState.files.filter(f => f.id !== fileId); renderFiles(); utils.showToast('Удалено', 'success'); }
             });
         }
 
-        // ============================================
-        // УПРАВЛЕНИЕ УЧАСТНИКАМИ
-        // ============================================
         async function openMembersModal(projectId) {
-            localState.activeProject = projectId;
-            elements.membersModal.classList.remove('hidden');
-            elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
-            
+            localState.activeProject = projectId; elements.membersModal.classList.remove('hidden'); elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
             const project = localState.projects.find(p => p.id === projectId);
             const isOwner = project && project.owner_id === state.currentUser.id;
             elements.deleteProjectSection.classList.toggle('hidden', !(localState.isSuperAdmin || isOwner));
-
             const { data: members, error } = await supabase.from('project_members').select('id, user_id, app_users(id, email, name, is_super_admin)').eq('project_id', projectId);
             if(error) { elements.membersList.innerHTML = '<div class="text-red-500 text-xs">Ошибка</div>'; return; }
-            
             let owner = null;
             if (project.owner_id === state.currentUser.id) owner = state.appUser;
-            else {
-                try { owner = (await supabase.from('app_users').select('*').eq('id', project.owner_id).single()).data; } catch { owner = { name: 'Владелец', email: 'hidden' }; }
-            }
-
+            else { try { owner = (await supabase.from('app_users').select('*').eq('id', project.owner_id).single()).data; } catch { owner = { name: 'Владелец', email: 'hidden' }; } }
             elements.membersList.innerHTML = '';
-            if(owner) {
-                 elements.membersList.innerHTML += `
-                    <div class="flex items-center justify-between p-2 bg-surface rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${owner.name?.[0] || owner.email[0]}</div>
-                            <div><p class="text-xs text-ink">${owner.name || 'User'}</p><p class="text-[10px] text-ink-muted">${owner.email} (Владелец)</p></div>
-                        </div>
-                    </div>
-                `;
-            }
-
+            if(owner) { elements.membersList.innerHTML += `<div class="flex items-center justify-between p-2 bg-surface rounded-lg"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${owner.name?.[0] || owner.email[0]}</div><div><p class="text-xs text-ink">${owner.name || 'User'}</p><p class="text-[10px] text-ink-muted">${owner.email} (Владелец)</p></div></div></div>`; }
             members.forEach(m => {
-                const u = m.app_users;
-                const isAdmin = u.is_super_admin;
+                const u = m.app_users; const isAdmin = u.is_super_admin;
                 const canRemove = (localState.isSuperAdmin || isOwner) && !isAdmin;
-                elements.membersList.innerHTML += `
-                    <div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div>
-                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
-                        </div>
-                        ${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}
-                    </div>
-                `;
+                elements.membersList.innerHTML += `<div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div><div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div></div>${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}</div>`;
             });
-
             document.querySelectorAll('.remove-member-btn').forEach(btn => btn.addEventListener('click', () => removeMember(btn.dataset.userId)));
         }
 
         elements.addMemberInput.addEventListener('input', async (e) => {
-            const query = e.target.value;
-            if (query.length < 2) { elements.userSuggestions.classList.add('hidden'); return; }
+            const query = e.target.value; if (query.length < 2) { elements.userSuggestions.classList.add('hidden'); return; }
             const { data, error } = await supabase.rpc('search_users', { search_query: query });
             if (error || !data || data.length === 0) { elements.userSuggestions.classList.add('hidden'); return; }
-            elements.userSuggestions.innerHTML = data.map(u => `
-                <div class="suggestion-item p-2 hover:bg-surface cursor-pointer" data-id="${u.id}" data-name="${u.name || u.email}">
-                    <p class="text-xs text-ink">${u.name || 'User'}</p><p class="text-[10px] text-ink-muted">${u.email}</p>
-                </div>
-            `).join('');
+            elements.userSuggestions.innerHTML = data.map(u => `<div class="suggestion-item p-2 hover:bg-surface cursor-pointer" data-id="${u.id}" data-name="${u.name || u.email}"><p class="text-xs text-ink">${u.name || 'User'}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>`).join('');
             elements.userSuggestions.classList.remove('hidden');
-            document.querySelectorAll('.suggestion-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    addMember(item.dataset.id, item.dataset.name);
-                    elements.userSuggestions.classList.add('hidden');
-                });
-            });
+            document.querySelectorAll('.suggestion-item').forEach(item => { item.addEventListener('click', () => { addMember(item.dataset.id, item.dataset.name); elements.userSuggestions.classList.add('hidden'); }); });
         });
 
-        async function addMember(userId, userName) {
-            const { error } = await supabase.from('project_members').insert({ project_id: localState.activeProject, user_id: userId });
-            if(error) { if(error.code === '23505') utils.showToast("Уже добавлен", "warning"); else utils.showToast("Ошибка: " + error.message, "error"); }
-            else { utils.showToast(`${userName} добавлен`, "success"); elements.addMemberInput.value = ''; openMembersModal(localState.activeProject); }
-        }
+        async function addMember(userId, userName) { const { error } = await supabase.from('project_members').insert({ project_id: localState.activeProject, user_id: userId }); if(error) { if(error.code === '23505') utils.showToast("Уже добавлен", "warning"); else utils.showToast("Ошибка: " + error.message, "error"); } else { utils.showToast(`${userName} добавлен`, "success"); elements.addMemberInput.value = ''; openMembersModal(localState.activeProject); } }
+        async function removeMember(userId) { const { error } = await supabase.from('project_members').delete().match({ project_id: localState.activeProject, user_id: userId }); if(error) utils.showToast("Ошибка", "error"); else { utils.showToast("Удален", "info"); openMembersModal(localState.activeProject); } }
 
-        async function removeMember(userId) {
-            const { error } = await supabase.from('project_members').delete().match({ project_id: localState.activeProject, user_id: userId });
-            if(error) utils.showToast("Ошибка", "error");
-            else { utils.showToast("Участник удален", "info"); openMembersModal(localState.activeProject); }
-        }
-
-        // ============================================
-        // ОБРАБОТЧИКИ
-        // ============================================
         function initEventListeners() {
             elements.confirmModalCancel.addEventListener('click', () => { elements.confirmModal.classList.add('hidden'); localState.confirmCallback = null; });
             elements.confirmModalOk.addEventListener('click', () => { elements.confirmModal.classList.add('hidden'); if (localState.confirmCallback) localState.confirmCallback(); });
-
             document.getElementById('create-project-btn').addEventListener('click', () => { elements.createModal.classList.remove('hidden'); elements.createModalInput.value = ''; elements.createModalInput.focus(); });
             document.getElementById('close-create-modal').addEventListener('click', () => elements.createModal.classList.add('hidden'));
             document.getElementById('cancel-create-btn').addEventListener('click', () => elements.createModal.classList.add('hidden'));
-            document.getElementById('confirm-create-btn').addEventListener('click', async () => {
-                const name = elements.createModalInput.value.trim();
-                if (!name) return;
-                const { data, error } = await supabase.from('projects').insert({ name: name, owner_id: state.currentUser.id }).select().single();
-                if (!error && data) { localState.projects.unshift(data); renderProjects(); utils.showToast('Создано', 'success'); elements.createModal.classList.add('hidden'); }
-                else utils.showToast('Ошибка', 'error');
-            });
-
+            document.getElementById('confirm-create-btn').addEventListener('click', async () => { const name = elements.createModalInput.value.trim(); if (!name) return; const { data, error } = await supabase.from('projects').insert({ name: name, owner_id: state.currentUser.id }).select().single(); if (!error && data) { localState.projects.unshift(data); renderProjects(); utils.showToast('Создано', 'success'); elements.createModal.classList.add('hidden'); } else utils.showToast('Ошибка', 'error'); });
             document.getElementById('close-members-modal').addEventListener('click', () => { elements.membersModal.classList.add('hidden'); });
             document.getElementById('delete-project-modal-btn').addEventListener('click', () => handleDeleteProject(localState.activeProject));
-
             elements.dropZone.addEventListener('click', () => elements.fileInput.click());
             elements.fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
             elements.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); elements.dropZone.classList.add('border-ink', 'bg-surface'); });
             elements.dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); elements.dropZone.classList.remove('border-ink', 'bg-surface'); });
             elements.dropZone.addEventListener('drop', (e) => { e.preventDefault(); elements.dropZone.classList.remove('border-ink', 'bg-surface'); handleFiles(e.dataTransfer.files); });
-
             elements.chatInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
             elements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
             elements.sendBtn.addEventListener('click', sendMessage);
-            
-            elements.chatMessages.addEventListener('scroll', async () => {
-                if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false);
-            });
+            elements.chatMessages.addEventListener('scroll', async () => { if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false); });
         }
 
         async function handleFiles(filesList) {
-            if (!filesList.length) return;
-            utils.showToast(`Загрузка...`, 'info');
+            if (!filesList.length) return; utils.showToast(`Загрузка...`, 'info');
             for (const file of filesList) {
-                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
-                const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase(); const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
                 const { error: uploadError } = await supabase.storage.from('user-files').upload(filePath, file);
                 if (uploadError) { utils.showToast(`Ошибка`, 'error'); continue; }
                 const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
-                const { error: dbError } = await supabase.from('files').insert({
-                    project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name,
-                    mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: []
-                });
+                const { error: dbError } = await supabase.from('files').insert({ project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name, mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: [] });
                 if(!dbError) await logFileAction('create', file.name);
             }
-            utils.showToast('Готово', 'success');
-            elements.fileInput.value = '';
-            await loadFiles(); // Immediate update
-            elements.filesList.scrollTop = 0;
+            utils.showToast('Готово', 'success'); elements.fileInput.value = ''; await loadFiles(); elements.filesList.scrollTop = 0;
         }
 
-        async function logFileAction(action, fileName) {
-            const text = action === 'create' ? `Создал файл: ${fileName}` : `Удалил файл: ${fileName}`;
-            await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
-        }
+        async function logFileAction(action, fileName) { const text = action === 'create' ? `Создал файл: ${fileName}` : `Удалил файл: ${fileName}`; await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text }); }
 
         async function sendMessage() {
-            const text = elements.chatInput.value.trim();
-            if (!text || !localState.activeProject) return;
+            const text = elements.chatInput.value.trim(); if (!text || !localState.activeProject) return;
             appendMessage({ id: 'temp-' + Date.now(), content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name } });
-            scrollToBottom();
-            elements.chatInput.value = ''; elements.chatInput.style.height = 'auto';
+            scrollToBottom(); elements.chatInput.value = ''; elements.chatInput.style.height = 'auto';
             await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
         }
         
