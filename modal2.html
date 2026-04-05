@@ -107,8 +107,6 @@
             <input type="text" id="add-member-input" placeholder="Введите email" class="w-full bg-surface border border-gray-light rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink/30">
             <div id="user-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-surface border border-gray-light rounded-lg shadow-lg hidden z-10 max-h-32 overflow-y-auto"></div>
         </div>
-        
-        <!-- Кнопка удаления проекта -->
         <div id="delete-project-section" class="border-t border-gray-light pt-4 hidden">
             <button id="delete-project-modal-btn" class="w-full py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors text-sm flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -118,12 +116,12 @@
     </div>
 </div>
 
-<!-- Шаблон файла (Обновленная структура) -->
-<!-- Col 3 width increased to 220px -->
+<!-- Шаблон файла -->
+<!-- Col 3 width = 220px -->
 <template id="file-card-template">
     <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_1fr_220px_auto] grid-rows-2 gap-x-3 gap-y-2 items-center group relative" data-file-id="">
         
-        <!-- Col 1: Icon (Row span 2) -->
+        <!-- Col 1: Icon -->
         <div class="row-span-2 justify-self-start self-center">
             <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
                 <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
@@ -140,18 +138,14 @@
         </div>
 
         <!-- Col 3: Inputs -->
-        <!-- Row 1: Project Select -->
         <div class="col-start-3 row-start-1 self-end">
             <select class="h-7 w-full bg-surface border border-gray-light rounded px-2 text-[10px] text-ink focus:outline-none focus:border-ink/30 select-project truncate">
                 <option value="">Без проекта</option>
             </select>
         </div>
-        <!-- Row 2: Tags Container (Chips) -->
+        <!-- Tags Container -->
         <div class="col-start-3 row-start-2 self-start">
-             <!-- Tags Container -->
-            <div class="tags-container w-full min-h-[28px] bg-surface border border-gray-light rounded px-1 py-0.5 flex flex-wrap items-center gap-1 cursor-text">
-                <!-- Chips will be rendered here by JS -->
-                <!-- Input is moved here to be part of the flow -->
+             <div class="tags-container w-full min-h-[28px] bg-surface border border-gray-light rounded px-1 py-0.5 flex flex-wrap items-center gap-1 cursor-text">
                 <input type="text" class="tag-input flex-1 min-w-[60px] border-none outline-none bg-transparent text-[10px] text-ink py-0.5" placeholder="Тег + Enter">
             </div>
         </div>
@@ -171,7 +165,6 @@
 </template>
 
 <style>
-    /* Стили для чипсов тегов */
     .tag-chip {
         display: inline-flex;
         align-items: center;
@@ -464,13 +457,12 @@
                 });
                 select.value = f.project_id || "";
 
-                // Tags Container Logic
+                // Tags Logic - Passing fileId to handlers
                 const tagsContainer = clone.querySelector('.tags-container');
                 const tagsInput = clone.querySelector('.tag-input');
                 
-                // Render existing tags as chips
-                const tags = f.tags || [];
-                renderTagChips(tagsContainer, tags, f.id);
+                // Initial Render of Tags
+                renderFileTags(tagsContainer, f.id);
 
                 // Delete Button
                 const delBtn = clone.querySelector('.delete-file-btn');
@@ -479,58 +471,95 @@
                     delBtn.addEventListener('click', () => handleDeleteFile(f.id, f.storage_path, f.name));
                 }
 
-                // Listeners
+                // Project Select Change
                 select.addEventListener('change', (e) => updateFileProject(f.id, e.target.value));
                 
-                // Tags Input Listener (Enter key)
+                // Tag Input Keydown
                 tagsInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         const val = tagsInput.value.trim();
                         if (val) {
-                            const currentTags = [...tags];
-                            if (!currentTags.includes(val)) {
-                                currentTags.push(val);
-                                updateFileTags(f.id, currentTags);
-                                // Update UI immediately
-                                renderTagChips(tagsContainer, currentTags, f.id);
-                                tagsInput.value = '';
-                            }
+                            handleAddTag(f.id, val, tagsContainer);
+                            tagsInput.value = '';
                         }
                     }
                 });
 
                 // Click on container focuses input
-                tagsContainer.addEventListener('click', () => tagsInput.focus());
+                tagsContainer.addEventListener('click', (e) => {
+                    // Focus input only if not clicking remove button
+                    if (!e.target.classList.contains('tag-chip-remove')) {
+                        tagsInput.focus();
+                    }
+                });
 
                 elements.filesList.appendChild(clone);
             });
         }
 
-        // Helper to render chips
-        function renderTagChips(container, tags, fileId) {
+        // NEW: Render tags for a specific file
+        function renderFileTags(container, fileId) {
+            const file = localState.files.find(f => f.id === fileId);
+            if (!file) return;
+
+            const tags = file.tags || [];
+            
             // Remove old chips
             container.querySelectorAll('.tag-chip').forEach(el => el.remove());
             
-            // Create chips
+            // Create chips before input
+            const input = container.querySelector('.tag-input');
+            
             tags.forEach(tag => {
                 const chip = document.createElement('span');
                 chip.className = 'tag-chip';
                 chip.innerHTML = `${escapeHtml(tag)} <span class="tag-chip-remove" data-tag="${escapeHtml(tag)}">×</span>`;
                 
-                // Insert before input
-                container.insertBefore(chip, container.querySelector('.tag-input'));
+                container.insertBefore(chip, input);
                 
-                // Delete listener
+                // Add remove listener
                 chip.querySelector('.tag-chip-remove').addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const tagToRemove = e.target.dataset.tag;
-                    const newTags = tags.filter(t => t !== tagToRemove);
-                    updateFileTags(fileId, newTags);
-                    // Update UI immediately
-                    renderTagChips(container, newTags, fileId);
+                    handleRemoveTag(fileId, tag, container);
                 });
             });
+        }
+
+        // NEW: Handle adding tag
+        async function handleAddTag(fileId, tagName, container) {
+            const file = localState.files.find(f => f.id === fileId);
+            if (!file) return;
+
+            const currentTags = file.tags || [];
+            
+            // Avoid duplicates
+            if (currentTags.includes(tagName)) return;
+
+            const newTags = [...currentTags, tagName];
+
+            // Optimistic UI update
+            file.tags = newTags;
+            renderFileTags(container, fileId);
+
+            // DB Update
+            await updateFileTags(fileId, newTags);
+        }
+
+        // NEW: Handle removing tag
+        async function handleRemoveTag(fileId, tagName, container) {
+            const file = localState.files.find(f => f.id === fileId);
+            if (!file) return;
+
+            const currentTags = file.tags || [];
+            const newTags = currentTags.filter(t => t !== tagName);
+
+            // Optimistic UI update
+            file.tags = newTags;
+            renderFileTags(container, fileId);
+
+            // DB Update
+            await updateFileTags(fileId, newTags);
         }
         
         function appendMessage(msg) {
@@ -559,10 +588,13 @@
 
         async function updateFileTags(fileId, tags) {
             const { error } = await supabase.from('files').update({ tags }).eq('id', fileId);
-            if(error) utils.showToast("Ошибка сохранения тегов", "error");
-            // Update local state optimistically
-            const file = localState.files.find(f => f.id === fileId);
-            if(file) file.tags = tags;
+            if(error) {
+                utils.showToast("Ошибка сохранения тегов", "error");
+            } else {
+                // Update local state to ensure consistency
+                const file = localState.files.find(f => f.id === fileId);
+                if(file) file.tags = tags;
+            }
         }
 
         async function handleDeleteProject(projectId) {
