@@ -81,21 +81,16 @@
 <!-- Шаблон файла -->
 <template id="file-card-template">
     <div class="file-card bg-card rounded-xl p-3 border border-gray-light grid grid-cols-[auto_1fr_auto] grid-rows-2 gap-x-3 gap-y-1 items-center group relative" data-file-id="">
-        <!-- Блок 1: Иконка -->
         <div class="row-span-2 justify-self-start self-center">
             <div class="w-10 h-10 rounded-lg bg-surface border border-gray-light flex flex-col items-center justify-center">
                 <span class="text-[9px] font-bold text-ink-muted uppercase ext-icon"></span>
             </div>
         </div>
-        
-        <!-- Блок 2: Информация -->
         <div class="col-start-2 row-start-1 min-w-0 self-end"><p class="text-xs text-ink font-medium truncate file-name"></p></div>
         <div class="col-start-2 row-start-2 flex items-center gap-2 self-start">
             <p class="text-[10px] text-ink-muted file-meta"></p>
             <p class="text-[10px] text-ink-muted file-size"></p>
         </div>
-
-        <!-- Блок 3: Кнопки -->
         <div class="col-start-3 row-span-2 flex flex-col items-end justify-center gap-1">
             <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors" title="Скачать">
                 <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -183,7 +178,7 @@
             }
 
             if (error) {
-                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки проектов</div>`;
+                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`;
                 return;
             }
 
@@ -250,24 +245,29 @@
             localState.isLoadingMessages = false;
         }
 
-        // ИСПРАВЛЕНО: Корректная подписка
+        // ИСПРАВЛЕНО: Надежная подписка
         async function subscribeToChat(projectId) {
-            // 1. Сначала отписываемся от старого
+            // 1. Отписываемся от старого канала
             if (localState.realtimeChannel) {
                 try {
-                    await supabase.removeChannel(localState.realtimeChannel);
+                    // Используем unsubscribe вместо removeChannel для мгновенного отключения без удаления ресурсов
+                    await localState.realtimeChannel.unsubscribe();
                 } catch(e) {
-                    console.warn("Channel removal error", e);
+                    console.warn("Unsubscribe error", e);
                 }
                 localState.realtimeChannel = null;
             }
 
-            // 2. Создаем и настраиваем новый
+            // 2. Небольшая пауза, чтобы SDK успел обновить состояние (важно!)
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // 3. Создаем новый канал
             try {
                 const channel = supabase.channel(`chat:${projectId}`, {
                     config: { broadcast: { self: true } }
                 });
 
+                // Сначала добавляем слушатели
                 channel.on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
@@ -281,6 +281,7 @@
                     scrollToBottom();
                 });
 
+                // Затем подписываемся
                 await channel.subscribe();
                 localState.realtimeChannel = channel;
             } catch(e) {
@@ -328,9 +329,7 @@
             });
         }
 
-        // ИСПРАВЛЕНО: Добавлена проверка на активный проект и await подписки
         async function selectProject(id) {
-            // Если проект уже выбран, ничего не делаем
             if (localState.activeProject === id) return;
 
             localState.activeProject = id;
@@ -346,10 +345,10 @@
 
             if(id) { 
                 await loadMessages(true); 
-                await subscribeToChat(id); // Исправлено: await
+                await subscribeToChat(id); 
             } else { 
                 if(localState.realtimeChannel) {
-                    await supabase.removeChannel(localState.realtimeChannel);
+                    await localState.realtimeChannel.unsubscribe();
                     localState.realtimeChannel = null;
                 }
                 elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; 
@@ -465,8 +464,13 @@
             let owner = null;
             if (project.owner_id === state.currentUser.id) owner = state.appUser;
             else {
-                 const { data: ownerData } = await supabase.from('app_users').select('*').eq('id', project.owner_id).single();
-                 owner = ownerData;
+                // Исправление 406: обработка ошибки, если прав нет
+                try {
+                     const { data: ownerData } = await supabase.from('app_users').select('*').eq('id', project.owner_id).single();
+                     owner = ownerData;
+                } catch {
+                     owner = { name: 'Владелец', email: 'hidden' };
+                }
             }
 
             elements.membersList.innerHTML = '';
@@ -559,7 +563,7 @@
 
             elements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
             elements.chatInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
-            elements.sendBtn.addEventListener('click', sendMessage);
+            elements.sendBtn.addEventListener('click', sendMessage)
         }
 
         async function handleFiles(filesList) {
