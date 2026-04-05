@@ -95,7 +95,7 @@
             <p class="text-[10px] text-ink-muted file-size"></p>
         </div>
 
-        <!-- Блок 3: Кнопки (Скачивание и Удаление) -->
+        <!-- Блок 3: Кнопки -->
         <div class="col-start-3 row-span-2 flex flex-col items-end justify-center gap-1">
             <a href="#" target="_blank" class="w-7 h-7 rounded border border-gray-light hover:border-ink/20 flex items-center justify-center transition-colors" title="Скачать">
                 <svg class="w-3 h-3 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -124,7 +124,7 @@
             files: [],
             messages: [],
             activeProject: null, 
-            activeProjectOwner: null, // ID владельца активного проекта
+            activeProjectOwner: null,
             activeProjectName: null,
             isSuperAdmin: state.appUser?.is_super_admin || false,
             realtimeChannel: null,
@@ -172,7 +172,7 @@
             const rpcResult = await supabase.rpc('get_accessible_projects');
             
             if (rpcResult.error) {
-                console.warn("Fallback select");
+                console.warn("RPC failed, fallback", rpcResult.error);
                 const fallbackResult = await supabase.from('projects').select('*').eq('owner_id', state.currentUser.id).order('created_at', { ascending: false });
                 data = fallbackResult.data;
                 error = fallbackResult.error;
@@ -183,7 +183,7 @@
             }
 
             if (error) {
-                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки</div>`;
+                elements.projectsList.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ошибка загрузки проектов</div>`;
                 return;
             }
 
@@ -199,7 +199,6 @@
         async function loadFiles() {
             if (!localState.activeProject) return;
             
-            // Загружаем файлы и данные о проекте (чтобы знать владельца)
             const [filesRes, projectRes] = await Promise.all([
                 supabase.from('files').select('id, name, created_at, size, storage_path, tags, project_id, profiles:uploader_id(name, email), uploader_id').eq('project_id', localState.activeProject).order('created_at', { ascending: false }),
                 supabase.from('projects').select('owner_id').eq('id', localState.activeProject).single()
@@ -251,15 +250,42 @@
             localState.isLoadingMessages = false;
         }
 
+        // ИСПРАВЛЕНО: Корректная подписка
         async function subscribeToChat(projectId) {
-            if (localState.realtimeChannel) try { await supabase.removeChannel(localState.realtimeChannel); } catch(e) {}
-            localState.realtimeChannel = supabase.channel(`chat:${projectId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${projectId}` }, (payload) => {
-                const msg = payload.new;
-                if(msg.sender_id === state.currentUser.id) msg.author = { name: state.appUser.name };
-                localState.messages.push(msg);
-                appendMessage(msg);
-                scrollToBottom();
-            }).subscribe();
+            // 1. Сначала отписываемся от старого
+            if (localState.realtimeChannel) {
+                try {
+                    await supabase.removeChannel(localState.realtimeChannel);
+                } catch(e) {
+                    console.warn("Channel removal error", e);
+                }
+                localState.realtimeChannel = null;
+            }
+
+            // 2. Создаем и настраиваем новый
+            try {
+                const channel = supabase.channel(`chat:${projectId}`, {
+                    config: { broadcast: { self: true } }
+                });
+
+                channel.on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `project_id=eq.${projectId}`
+                }, (payload) => {
+                    const msg = payload.new;
+                    if(msg.sender_id === state.currentUser.id) msg.author = { name: state.appUser.name };
+                    localState.messages.push(msg);
+                    appendMessage(msg);
+                    scrollToBottom();
+                });
+
+                await channel.subscribe();
+                localState.realtimeChannel = channel;
+            } catch(e) {
+                console.error("Realtime subscription error", e);
+            }
         }
 
         // ============================================
@@ -286,7 +312,6 @@
                 </div>
             `;
 
-            // События
             document.querySelectorAll('.project-item').forEach(el => {
                 el.addEventListener('click', async (e) => {
                     if (e.target.closest('.project-settings-btn') || e.target.closest('.delete-project-btn')) return;
@@ -303,7 +328,11 @@
             });
         }
 
+        // ИСПРАВЛЕНО: Добавлена проверка на активный проект и await подписки
         async function selectProject(id) {
+            // Если проект уже выбран, ничего не делаем
+            if (localState.activeProject === id) return;
+
             localState.activeProject = id;
             const project = localState.projects.find(p => p.id === id);
             localState.activeProjectName = project ? project.name : 'Проект';
@@ -315,8 +344,16 @@
             localState.oldestMessageDate = null;
             localState.hasMoreMessages = true;
 
-            if(id) { await loadMessages(true); subscribeToChat(id); } 
-            else { if(localState.realtimeChannel) supabase.removeChannel(localState.realtimeChannel); elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; }
+            if(id) { 
+                await loadMessages(true); 
+                await subscribeToChat(id); // Исправлено: await
+            } else { 
+                if(localState.realtimeChannel) {
+                    await supabase.removeChannel(localState.realtimeChannel);
+                    localState.realtimeChannel = null;
+                }
+                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; 
+            }
             await loadFiles();
             renderProjects();
         }
@@ -326,7 +363,6 @@
             const template = document.getElementById('file-card-template');
             elements.filesList.innerHTML = '';
             
-            // Проверяем права на удаление: Супер-админ или Владелец проекта
             const canDelete = localState.isSuperAdmin || (localState.activeProjectOwner === state.currentUser.id);
 
             localState.files.forEach(f => {
@@ -337,7 +373,6 @@
                 clone.querySelector('.file-size').textContent = formatSize(f.size);
                 clone.querySelector('a').href = f.storage_path;
                 
-                // Показываем кнопку удаления, если есть права
                 const delBtn = clone.querySelector('.delete-file-btn');
                 if (canDelete) {
                     delBtn.classList.remove('hidden');
@@ -362,28 +397,18 @@
         // ============================================
 
         async function handleDeleteProject(projectId) {
-            if (!confirm('Вы уверены, что хотите удалить проект и все его файлы? Это действие необратимо.')) return;
+            if (!confirm('Удалить проект и все файлы?')) return;
 
             utils.showToast('Удаление проекта...', 'info');
 
-            // 1. Получаем список файлов для удаления из Storage
             const { data: files } = await supabase.from('files').select('storage_path').eq('project_id', projectId);
             
-            // 2. Удаляем файлы из Storage
             if (files && files.length > 0) {
-                const paths = files.map(f => f.storage_path);
-                // Supabase Storage требует массив путей для удаления
-                // Извлекаем путь относительно бакета (без домена)
-                // В вашем коде путь: `userId/timestamp_name.ext`
-                // storage_path содержит полный URL, нужно извлечь часть пути
-                const storagePaths = paths.map(p => {
+                const storagePaths = files.map(p => {
                     try {
-                        const url = new URL(p);
-                        // Декодируем, чтобы получить путь с папками
-                        return decodeURIComponent(url.pathname.split('/storage/v1/object/public/user-files/')[1]);
-                    } catch {
-                        return null;
-                    }
+                        const url = new URL(p.storage_path);
+                        return decodeURIComponent(url.pathname.split('/user-files/')[1]);
+                    } catch { return null; }
                 }).filter(Boolean);
 
                 if (storagePaths.length > 0) {
@@ -391,16 +416,13 @@
                 }
             }
 
-            // 3. Удаляем проект из БД (каскадно удалятся записи в files, messages, members)
             const { error } = await supabase.from('projects').delete().eq('id', projectId);
 
             if (error) {
                 utils.showToast('Ошибка удаления: ' + error.message, 'error');
             } else {
                 localState.projects = localState.projects.filter(p => p.id !== projectId);
-                if (localState.activeProject === projectId) {
-                    selectProject(null); // Сбрасываем выбор
-                }
+                if (localState.activeProject === projectId) selectProject(null);
                 renderProjects();
                 utils.showToast('Проект удален', 'success');
             }
@@ -409,25 +431,18 @@
         async function handleDeleteFile(fileId, storageUrl, fileName) {
             if (!confirm(`Удалить файл "${fileName}"?`)) return;
 
-            // 1. Удаляем из Storage
             try {
                 const url = new URL(storageUrl);
-                const filePath = decodeURIComponent(url.pathname.split('/storage/v1/object/public/user-files/')[1]);
+                const filePath = decodeURIComponent(url.pathname.split('/user-files/')[1]);
                 await supabase.storage.from('user-files').remove([filePath]);
-            } catch (e) {
-                console.warn("Could not delete from storage, proceeding with DB delete", e);
-            }
+            } catch (e) { console.warn("Storage delete error", e); }
 
-            // 2. Удаляем из БД
             const { error } = await supabase.from('files').delete().eq('id', fileId);
 
             if (error) {
                 utils.showToast('Ошибка удаления файла', 'error');
             } else {
-                // 3. Логируем в чат
                 await logFileAction('delete', fileName);
-                
-                // Обновляем UI
                 localState.files = localState.files.filter(f => f.id !== fileId);
                 renderFiles();
                 utils.showToast('Файл удален', 'success');
@@ -561,7 +576,6 @@
                     mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: []
                 });
                 
-                // Логируем создание файла
                 if(!dbError) await logFileAction('create', file.name);
             }
             utils.showToast('Готово', 'success');
@@ -571,7 +585,6 @@
         }
 
         async function logFileAction(action, fileName) {
-            // action: 'create' или 'delete'
             const text = action === 'create' 
                 ? `Создал файл: ${fileName}` 
                 : `Удалил файл: ${fileName}`;
@@ -592,7 +605,6 @@
             await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text });
         }
         
-        function formatFullDate(dateStr) { const d = new Date(dateStr); return `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })} ( ${d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} )`; }
         function formatTime(dateStr) { return new Date(dateStr).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
         function formatSize(bytes) { if(bytes > 1000*1024*1024) return (bytes/(1024*1024*1024)).toFixed(1)+' GB'; if(bytes > 1024*1024) return (bytes/(1024*1024)).toFixed(1)+' MB'; if(bytes > 1024) return (bytes/1024).toFixed(1)+' KB'; return bytes + ' B'; }
         function scrollToBottom() { elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; }
