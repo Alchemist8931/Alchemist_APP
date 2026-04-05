@@ -125,8 +125,13 @@
             projects: [], files: [], messages: [], activeProject: null, activeProjectOwner: null, activeProjectName: null,
             isSuperAdmin: state.appUser?.is_super_admin || false, realtimeChannel: null, isLoadingMessages: false,
             hasMoreMessages: true, oldestMessageDate: null, allTags: new Set(), confirmCallback: null,
-            fileRefreshInterval: null, knownAuthors: {} // Кэш авторов
+            fileRefreshInterval: null, knownAuthors: {}
         };
+
+        // Инициализируем кэш авторов текущим пользователем сразу
+        if (state.currentUser && state.appUser) {
+            localState.knownAuthors[state.currentUser.id] = state.appUser.name || state.currentUser.email;
+        }
 
         const elements = {
             projectsList: document.getElementById('projects-list'), filesList: document.getElementById('files-list'),
@@ -197,7 +202,6 @@
             if (error) { localState.isLoadingMessages = false; return; }
             if (data.length === 0) { localState.hasMoreMessages = false; localState.isLoadingMessages = false; if(initial) elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs">Нет сообщений</div>`; return; }
             data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            // Кэшируем имена авторов при загрузке истории
             data.forEach(m => { if(m.author) localState.knownAuthors[m.sender_id] = m.author.name; });
             if (initial) { localState.messages = data; renderMessages(); scrollToBottom(); } 
             else { const prevScrollHeight = elements.chatMessages.scrollHeight; localState.messages = [...data, ...localState.messages]; renderMessages(); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight - prevScrollHeight; }
@@ -206,37 +210,23 @@
             localState.isLoadingMessages = false;
         }
 
-        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ
         async function subscribeToChat(projectId) {
-            // 1. Полностью закрываем старый канал
             if (localState.realtimeChannel) {
-                try { 
-                    await localState.realtimeChannel.unsubscribe(); 
-                    supabase.removeChannel(localState.realtimeChannel); 
-                } catch(e) { console.warn("Cleanup error", e); }
+                try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) { console.warn("Cleanup error", e); }
                 localState.realtimeChannel = null;
             }
-
-            // 2. Пауза критически важна для сброса состояния SDK
             await new Promise(resolve => setTimeout(resolve, 100));
-
-            // 3. Создаем канал
             const channel = supabase.channel(`chat:${projectId}`);
 
-            // 4. Регистрируем обработчик ДО подписки
             channel.on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `project_id=eq.${projectId}`
+                event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${projectId}`
             }, async (payload) => {
                 const msg = payload.new;
                 
-                // Realtime присылает только sender_id, нужно найти имя
                 if (msg.sender_id === state.currentUser.id) {
-                    msg.author = { name: state.appUser.name };
+                    // Берем имя из гарантированно загруженного профиля
+                    msg.author = { name: state.appUser?.name || 'Я' };
                 } else {
-                    // Если имени нет в кэше, запрашиваем у БД
                     if (!localState.knownAuthors[msg.sender_id]) {
                          const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
                          localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
@@ -249,14 +239,10 @@
                 scrollToBottom();
             });
 
-            // 5. Подписываемся
             try {
                 await channel.subscribe();
                 localState.realtimeChannel = channel;
-                console.log("Realtime subscribed successfully");
-            } catch(e) {
-                console.error("Realtime subscription failed", e);
-            }
+            } catch(e) { console.error("Realtime subscription failed", e); }
         }
 
         function renderProjects() {
@@ -379,23 +365,70 @@
             });
         }
 
+        // ИСПРАВЛЕНО: Фильтрация дубликатов (Owner vs Member)
         async function openMembersModal(projectId) {
-            localState.activeProject = projectId; elements.membersModal.classList.remove('hidden'); elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
+            localState.activeProject = projectId; 
+            elements.membersModal.classList.remove('hidden'); 
+            elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
+            
             const project = localState.projects.find(p => p.id === projectId);
-            const isOwner = project && project.owner_id === state.currentUser.id;
+            const currentUserId = state.currentUser.id;
+            const isOwner = project && project.owner_id === currentUserId;
+            
+            // Показываем кнопку удаления проекта только Владельцу или Супер-Админу
             elements.deleteProjectSection.classList.toggle('hidden', !(localState.isSuperAdmin || isOwner));
+
             const { data: members, error } = await supabase.from('project_members').select('id, user_id, app_users(id, email, name, is_super_admin)').eq('project_id', projectId);
             if(error) { elements.membersList.innerHTML = '<div class="text-red-500 text-xs">Ошибка</div>'; return; }
+            
+            // Получаем данные владельца
             let owner = null;
-            if (project.owner_id === state.currentUser.id) owner = state.appUser;
-            else { try { owner = (await supabase.from('app_users').select('*').eq('id', project.owner_id).single()).data; } catch { owner = { name: 'Владелец', email: 'hidden' }; } }
+            if (project.owner_id === currentUserId) {
+                owner = state.appUser;
+            } else {
+                try { 
+                    const { data: ownerData } = await supabase.from('app_users').select('*').eq('id', project.owner_id).single();
+                    owner = ownerData; 
+                } catch { 
+                    owner = { name: 'Владелец', email: 'hidden' }; 
+                }
+            }
+
             elements.membersList.innerHTML = '';
-            if(owner) { elements.membersList.innerHTML += `<div class="flex items-center justify-between p-2 bg-surface rounded-lg"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${owner.name?.[0] || owner.email[0]}</div><div><p class="text-xs text-ink">${owner.name || 'User'}</p><p class="text-[10px] text-ink-muted">${owner.email} (Владелец)</p></div></div></div>`; }
-            members.forEach(m => {
-                const u = m.app_users; const isAdmin = u.is_super_admin;
-                const canRemove = (localState.isSuperAdmin || isOwner) && !isAdmin;
-                elements.membersList.innerHTML += `<div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div><div><p class="text-xs text-ink">${u.name || 'User'} ${isAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div></div>${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}</div>`;
+            
+            // 1. Рендерим карточку Владельца
+            if(owner) {
+                 elements.membersList.innerHTML += `
+                    <div class="flex items-center justify-between p-2 bg-surface rounded-lg border border-ink/10">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${owner.name?.[0] || owner.email[0]}</div>
+                            <div><p class="text-xs text-ink font-medium">${owner.name || 'User'}</p><p class="text-[10px] text-ink-muted">${owner.email} (Владелец)</p></div>
+                        </div>
+                        ${owner.is_super_admin ? '<span class="text-[10px] text-green-500 mr-2">Super Admin</span>' : ''}
+                    </div>
+                `;
+            }
+
+            // 2. Фильтруем список участников: исключаем владельца, чтобы избежать дублей
+            const regularMembers = members.filter(m => m.user_id !== project.owner_id);
+
+            regularMembers.forEach(m => {
+                const u = m.app_users;
+                const isTargetAdmin = u.is_super_admin;
+                // Кнопка удаления: видна владельцу или суперадмину, И скрывается у суперадминов
+                const canRemove = (localState.isSuperAdmin || isOwner) && !isTargetAdmin;
+                
+                elements.membersList.innerHTML += `
+                    <div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div>
+                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isTargetAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
+                        </div>
+                        ${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}
+                    </div>
+                `;
             });
+
             document.querySelectorAll('.remove-member-btn').forEach(btn => btn.addEventListener('click', () => removeMember(btn.dataset.userId)));
         }
 
@@ -427,7 +460,7 @@
             elements.dropZone.addEventListener('drop', (e) => { e.preventDefault(); elements.dropZone.classList.remove('border-ink', 'bg-surface'); handleFiles(e.dataTransfer.files); });
             elements.chatInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; });
             elements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-            elements.sendBtn.addEventListener('click', sendMessage);
+            elements.sendBtn.addEventListener('click', sendMessage)
             elements.chatMessages.addEventListener('scroll', async () => { if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false); });
         }
 
