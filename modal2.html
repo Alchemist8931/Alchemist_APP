@@ -251,48 +251,64 @@
         }
 
         // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ
+                // ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОДПИСКИ
         async function subscribeToChat(projectId) {
             const myProjectId = projectId;
             const channelName = `chat:${myProjectId}`;
 
-            // 1. КРИТИЧЕСКИ ВАЖНО: Находим и удаляем ЛЮБОЙ канал с таким именем из глобального списка Supabase
-            // Это решает проблему "зомби-каналов", когда подписка вроде есть, но событий нет.
+            // 1. Глобальная очистка через прямой доступ к массиву каналов
+            // Находим ВСЕ каналы с таким именем и уничтожаем их
             const allChannels = supabase.realtime.channels;
-            const existingChannels = [...allChannels].filter(c => c.topic === channelName);
+            const toRemove = [...allChannels].filter(c => c.topic === channelName);
             
-            for (const ch of existingChannels) {
-                try { await supabase.removeChannel(ch); } catch(e) { console.warn("Remove existing error", e); }
+            for (const ch of toRemove) {
+                try { 
+                    // Отписываемся и удаляем
+                    ch.unsubscribe(); 
+                    await supabase.removeChannel(ch); 
+                } catch(e) { console.warn("Cleanup error", e); }
             }
             
             // Сбрасываем локальную ссылку
             localState.realtimeChannel = null;
 
-            // Пауза для синхронизации SDK
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Пауза, чтобы WebSocket успел закрыть соединение
+            await new Promise(resolve => setTimeout(resolve, 200));
 
-            // Проверка актуальности
+            // Проверка актуальности проекта
             if (localState.activeProject !== myProjectId) return;
 
             // 2. Создаем канал
-            const channel = supabase.channel(channelName);
+            let channel = supabase.channel(channelName);
 
-            // 3. Регистрируем обработчик ДО подписки
+            // 3. ПРОВЕРКА НА "ЗОМБИ": если state уже 'joined', значит SDK вернул старый объект
+            if (channel.state === 'joined' || channel.state === 'joining') {
+                console.warn(`Zombie channel detected (${channel.state}), forcing reset...`);
+                
+                // Жестко удаляем этот канал
+                await supabase.removeChannel(channel);
+                // Ждем дольше
+                await new Promise(resolve => setTimeout(resolve, 400));
+                // Создаем заново
+                channel = supabase.channel(channelName);
+            }
+
+            // 4. Регистрируем обработчик ДО подписки
             channel.on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'messages',
-    filter: `project_id=eq.${myProjectId}`
-}, async (payload) => {
-    const msg = payload.new;
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `project_id=eq.${myProjectId}`
+            }, async (payload) => {
+                const msg = payload.new;
 
-    // ИСПРАВЛЕНИЕ ДУБЛИРОВАНИЯ:
-    // Проверяем, есть ли уже сообщение с таким ID в локальном списке
-    // (это значит, что мы уже отображали его при оптимистичном обновлении)
-    if (localState.messages.some(m => m.id === msg.id)) {
-        return;
-    }
+                // Защита от дублей (если сообщение уже есть локально)
+                if (localState.messages.some(m => m.id === msg.id)) return;
 
-                // Обновляем UI для чужих сообщений
+                // Оптимизация: не обновляем UI для своих сообщений (они уже добавлены в sendMessage)
+                if (msg.sender_id === state.currentUser.id) return;
+
+                // Обрабатываем чужие сообщения
                 if (!localState.knownAuthors[msg.sender_id]) {
                      const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
                      localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
@@ -304,7 +320,7 @@
                 scrollToBottom();
             });
 
-            // 4. Подписываемся
+            // 5. Подписываемся
             try {
                 await channel.subscribe();
                 if (localState.activeProject === myProjectId) {
