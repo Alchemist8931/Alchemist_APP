@@ -47,7 +47,18 @@
     </div>
 </div>
 
-<!-- Модальные окна -->
+<!-- Модальное окно загрузки файлов (Правый верхний угол) -->
+<div id="upload-modal" class="hidden fixed top-4 right-4 z-50 w-80 bg-card border border-gray-light rounded-xl shadow-xl p-4 transition-opacity duration-300">
+    <div class="flex justify-between items-center mb-3">
+        <h3 class="text-sm font-semibold text-ink">Загрузка файлов</h3>
+        <span class="text-xs text-ink-muted" id="upload-count">0 из 0</span>
+    </div>
+    <div id="upload-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+        <!-- Сюда динамически добавляются элементы файлов -->
+    </div>
+</div>
+
+<!-- Остальные модальные окна -->
 <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-card rounded-xl border border-gray-light w-full max-w-sm p-6 shadow-2xl">
         <h3 id="confirm-modal-title" class="text-lg font-semibold text-ink mb-2">Подтверждение</h3>
@@ -110,7 +121,18 @@
     </div>
 </template>
 
-<style>.tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(229, 229, 229, 0.1); border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #E5E5E5; white-space: nowrap; } .tag-chip-remove { cursor: pointer; opacity: 0.5; line-height: 1; } .tag-chip-remove:hover { opacity: 1; color: #EF4444; }</style>
+<style>
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(229, 229, 229, 0.1); border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #E5E5E5; white-space: nowrap; } 
+.tag-chip-remove { cursor: pointer; opacity: 0.5; line-height: 1; } 
+.tag-chip-remove:hover { opacity: 1; color: #EF4444; }
+
+/* Стили для модального окна загрузки */
+.upload-file-item { display: flex; flex-direction: column; gap: 4px; }
+.upload-progress-bg { height: 4px; background: #262626; border-radius: 2px; overflow: hidden; }
+.upload-progress-fill { height: 100%; background: #E5E5E5; transition: width 0.2s ease; width: 0%; }
+.upload-status-done { color: #22C55E !important; }
+.upload-status-error { color: #EF4444 !important; }
+</style>
 
 <script>
 (function() {
@@ -128,7 +150,7 @@
             fileRefreshInterval: null, knownAuthors: {}
         };
 
-        // Инициализируем кэш авторов текущим пользователем сразу
+        // Кэшируем текущего пользователя
         if (state.currentUser && state.appUser) {
             localState.knownAuthors[state.currentUser.id] = state.appUser.name || state.currentUser.email;
         }
@@ -143,7 +165,11 @@
             userSuggestions: document.getElementById('user-suggestions'), createModal: document.getElementById('create-project-modal'),
             createModalInput: document.getElementById('new-project-name-input'), deleteProjectSection: document.getElementById('delete-project-section'),
             confirmModal: document.getElementById('confirm-modal'), confirmModalMsg: document.getElementById('confirm-modal-message'),
-            confirmModalOk: document.getElementById('confirm-modal-ok'), confirmModalCancel: document.getElementById('confirm-modal-cancel')
+            confirmModalOk: document.getElementById('confirm-modal-ok'), confirmModalCancel: document.getElementById('confirm-modal-cancel'),
+            // Элементы модального окна загрузки
+            uploadModal: document.getElementById('upload-modal'),
+            uploadList: document.getElementById('upload-list'),
+            uploadCount: document.getElementById('upload-count')
         };
 
         async function init() {
@@ -211,38 +237,19 @@
         }
 
         async function subscribeToChat(projectId) {
-            if (localState.realtimeChannel) {
-                try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) { console.warn("Cleanup error", e); }
-                localState.realtimeChannel = null;
-            }
+            if (localState.realtimeChannel) { try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) {} localState.realtimeChannel = null; }
             await new Promise(resolve => setTimeout(resolve, 100));
             const channel = supabase.channel(`chat:${projectId}`);
-
-            channel.on('postgres_changes', {
-                event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${projectId}`
-            }, async (payload) => {
+            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${projectId}` }, async (payload) => {
                 const msg = payload.new;
-                
-                if (msg.sender_id === state.currentUser.id) {
-                    // Берем имя из гарантированно загруженного профиля
-                    msg.author = { name: state.appUser?.name || 'Я' };
-                } else {
-                    if (!localState.knownAuthors[msg.sender_id]) {
-                         const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single();
-                         localState.knownAuthors[msg.sender_id] = userData?.name || 'User';
-                    }
+                if (msg.sender_id === state.currentUser.id) msg.author = { name: state.appUser?.name || 'Я' };
+                else {
+                    if (!localState.knownAuthors[msg.sender_id]) { const { data: userData } = await supabase.from('app_users').select('name').eq('id', msg.sender_id).single(); localState.knownAuthors[msg.sender_id] = userData?.name || 'User'; }
                     msg.author = { name: localState.knownAuthors[msg.sender_id] };
                 }
-
-                localState.messages.push(msg);
-                appendMessage(msg);
-                scrollToBottom();
+                localState.messages.push(msg); appendMessage(msg); scrollToBottom();
             });
-
-            try {
-                await channel.subscribe();
-                localState.realtimeChannel = channel;
-            } catch(e) { console.error("Realtime subscription failed", e); }
+            try { await channel.subscribe(); localState.realtimeChannel = channel; } catch(e) { console.error("Realtime error", e); }
         }
 
         function renderProjects() {
@@ -269,27 +276,14 @@
         async function selectProject(id) {
             if (localState.activeProject === id) return;
             if (localState.fileRefreshInterval) { clearInterval(localState.fileRefreshInterval); localState.fileRefreshInterval = null; }
-
             localState.activeProject = id;
             const project = localState.projects.find(p => p.id === id);
             localState.activeProjectName = project ? project.name : 'Проект';
             localState.activeProjectOwner = project ? project.owner_id : null;
             elements.uploadHint.textContent = `Файлы: "${localState.activeProjectName}"`;
-            
-            updateChatState(!!id);
-            localState.messages = [];
-            localState.oldestMessageDate = null;
-            localState.hasMoreMessages = true;
-
-            if(id) { 
-                await loadMessages(true); 
-                await subscribeToChat(id); 
-                await loadFiles();
-                localState.fileRefreshInterval = setInterval(() => loadFiles(), 5000);
-            } else { 
-                if(localState.realtimeChannel) { try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) {} localState.realtimeChannel = null; }
-                elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; 
-            }
+            updateChatState(!!id); localState.messages = []; localState.oldestMessageDate = null; localState.hasMoreMessages = true;
+            if(id) { await loadMessages(true); await subscribeToChat(id); await loadFiles(); localState.fileRefreshInterval = setInterval(() => loadFiles(), 5000); }
+            else { if(localState.realtimeChannel) { try { await localState.realtimeChannel.unsubscribe(); supabase.removeChannel(localState.realtimeChannel); } catch(e) {} localState.realtimeChannel = null; } elements.chatMessages.innerHTML = `<div class="text-center py-10 text-ink-muted text-xs flex items-center justify-center h-full">Выберите проект</div>`; }
             renderProjects();
         }
 
@@ -342,8 +336,8 @@
         function createMessageHTML(m) { return `<div class="message-item p-2 rounded-lg hover:bg-surface/50"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-surface border border-gray-light flex-shrink-0 flex items-center justify-center text-[8px] text-ink-muted">${m.author?.name ? escapeHtml(m.author.name.charAt(0).toUpperCase()) : 'U'}</div><div class="flex-1"><div class="flex items-baseline gap-2"><span class="text-[11px] font-semibold text-ink">${escapeHtml(m.author?.name || 'System')}</span><span class="text-[9px] text-ink-muted">${formatTime(m.created_at)}</span></div><p class="text-xs text-ink-light mt-0.5 whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`; }
 
         function showConfirmModal(message, callback) { elements.confirmModalMsg.textContent = message; elements.confirmModal.classList.remove('hidden'); localState.confirmCallback = callback; }
-        async function updateFileProject(fileId, projectId) { const { error } = await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId); if (error) utils.showToast("Ошибка обновления", "error"); }
-        async function updateFileTags(fileId, tags) { const { error } = await supabase.from('files').update({ tags }).eq('id', fileId).select(); if(error) utils.showToast("Ошибка тегов", "error"); else { const file = localState.files.find(f => f.id === fileId); if(file) file.tags = tags; } }
+        async function updateFileProject(fileId, projectId) { const { error } = await supabase.from('files').update({ project_id: projectId || null }).eq('id', fileId); if (error) utils.showToast("Ошибка", "error"); }
+        async function updateFileTags(fileId, tags) { const { error } = await supabase.from('files').update({ tags }).eq('id', fileId).select(); if(error) utils.showToast("Ошибка", "error"); else { const file = localState.files.find(f => f.id === fileId); if(file) file.tags = tags; } }
         
         async function handleDeleteProject(projectId) {
             showConfirmModal('Удалить проект и все файлы?', async () => {
@@ -365,70 +359,25 @@
             });
         }
 
-        // ИСПРАВЛЕНО: Фильтрация дубликатов (Owner vs Member)
         async function openMembersModal(projectId) {
-            localState.activeProject = projectId; 
-            elements.membersModal.classList.remove('hidden'); 
-            elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
-            
+            localState.activeProject = projectId; elements.membersModal.classList.remove('hidden'); elements.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
             const project = localState.projects.find(p => p.id === projectId);
             const currentUserId = state.currentUser.id;
             const isOwner = project && project.owner_id === currentUserId;
-            
-            // Показываем кнопку удаления проекта только Владельцу или Супер-Админу
             elements.deleteProjectSection.classList.toggle('hidden', !(localState.isSuperAdmin || isOwner));
-
             const { data: members, error } = await supabase.from('project_members').select('id, user_id, app_users(id, email, name, is_super_admin)').eq('project_id', projectId);
             if(error) { elements.membersList.innerHTML = '<div class="text-red-500 text-xs">Ошибка</div>'; return; }
-            
-            // Получаем данные владельца
             let owner = null;
-            if (project.owner_id === currentUserId) {
-                owner = state.appUser;
-            } else {
-                try { 
-                    const { data: ownerData } = await supabase.from('app_users').select('*').eq('id', project.owner_id).single();
-                    owner = ownerData; 
-                } catch { 
-                    owner = { name: 'Владелец', email: 'hidden' }; 
-                }
-            }
-
+            if (project.owner_id === currentUserId) owner = state.appUser;
+            else { try { const { data: ownerData } = await supabase.from('app_users').select('*').eq('id', project.owner_id).single(); owner = ownerData; } catch { owner = { name: 'Владелец', email: 'hidden' }; } }
             elements.membersList.innerHTML = '';
-            
-            // 1. Рендерим карточку Владельца
-            if(owner) {
-                 elements.membersList.innerHTML += `
-                    <div class="flex items-center justify-between p-2 bg-surface rounded-lg border border-ink/10">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${owner.name?.[0] || owner.email[0]}</div>
-                            <div><p class="text-xs text-ink font-medium">${owner.name || 'User'}</p><p class="text-[10px] text-ink-muted">${owner.email} (Владелец)</p></div>
-                        </div>
-                        ${owner.is_super_admin ? '<span class="text-[10px] text-green-500 mr-2">Super Admin</span>' : ''}
-                    </div>
-                `;
-            }
-
-            // 2. Фильтруем список участников: исключаем владельца, чтобы избежать дублей
+            if(owner) { elements.membersList.innerHTML += `<div class="flex items-center justify-between p-2 bg-surface rounded-lg border border-ink/10"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${owner.name?.[0] || owner.email[0]}</div><div><p class="text-xs text-ink font-medium">${owner.name || 'User'}</p><p class="text-[10px] text-ink-muted">${owner.email} (Владелец)</p></div></div>${owner.is_super_admin ? '<span class="text-[10px] text-green-500 mr-2">Super Admin</span>' : ''}</div>`; }
             const regularMembers = members.filter(m => m.user_id !== project.owner_id);
-
             regularMembers.forEach(m => {
-                const u = m.app_users;
-                const isTargetAdmin = u.is_super_admin;
-                // Кнопка удаления: видна владельцу или суперадмину, И скрывается у суперадминов
+                const u = m.app_users; const isTargetAdmin = u.is_super_admin;
                 const canRemove = (localState.isSuperAdmin || isOwner) && !isTargetAdmin;
-                
-                elements.membersList.innerHTML += `
-                    <div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div>
-                            <div><p class="text-xs text-ink">${u.name || 'User'} ${isTargetAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div>
-                        </div>
-                        ${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}
-                    </div>
-                `;
+                elements.membersList.innerHTML += `<div class="flex items-center justify-between p-2 bg-surface rounded-lg mt-1"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-ink/20 flex items-center justify-center text-[9px]">${u.name?.[0] || u.email[0]}</div><div><p class="text-xs text-ink">${u.name || 'User'} ${isTargetAdmin ? '👑' : ''}</p><p class="text-[10px] text-ink-muted">${u.email}</p></div></div>${canRemove ? `<button class="remove-member-btn text-red-400 hover:text-red-300 text-xs" data-user-id="${u.id}">Удалить</button>` : ''}</div>`;
             });
-
             document.querySelectorAll('.remove-member-btn').forEach(btn => btn.addEventListener('click', () => removeMember(btn.dataset.userId)));
         }
 
@@ -464,20 +413,108 @@
             elements.chatMessages.addEventListener('scroll', async () => { if (elements.chatMessages.scrollTop < 50 && !localState.isLoadingMessages && localState.hasMoreMessages && localState.activeProject) await loadMessages(false); });
         }
 
+        // ============================================
+        // НОВАЯ ЛОГИКА ЗАГРУЗКИ ФАЙЛОВ
+        // ============================================
         async function handleFiles(filesList) {
-            if (!filesList.length) return; utils.showToast(`Загрузка...`, 'info');
-            for (const file of filesList) {
-                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase(); const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
-                const { error: uploadError } = await supabase.storage.from('user-files').upload(filePath, file);
-                if (uploadError) { utils.showToast(`Ошибка`, 'error'); continue; }
-                const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
-                const { error: dbError } = await supabase.from('files').insert({ project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name, mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: [] });
-                if(!dbError) await logFileAction('create', file.name);
+            if (!filesList.length) return;
+
+            const MAX_FILE_SIZE = 49 * 1024 * 1024; // 49 MB
+            const validFiles = [];
+            const tooLargeFiles = [];
+
+            // 1. Фильтрация файлов
+            Array.from(filesList).forEach(file => {
+                if (file.size > MAX_FILE_SIZE) {
+                    tooLargeFiles.push(file.name);
+                } else {
+                    validFiles.push(file);
+                }
+            });
+
+            if (tooLargeFiles.length > 0) {
+                utils.showToast(`Файлы > 49МБ нельзя загрузить: ${tooLargeFiles.join(', ')}`, 'error');
             }
-            utils.showToast('Готово', 'success'); elements.fileInput.value = ''; await loadFiles(); elements.filesList.scrollTop = 0;
+
+            if (validFiles.length === 0) return;
+
+            // 2. Инициализация UI модального окна
+            elements.uploadList.innerHTML = validFiles.map(f => `
+                <div class="upload-file-item" data-name="${f.name}">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-ink truncate w-48">${f.name}</span>
+                        <span class="text-[10px] text-ink-muted progress-text">Ожидание...</span>
+                    </div>
+                    <div class="upload-progress-bg">
+                        <div class="upload-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            `).join('');
+            
+            elements.uploadCount.textContent = `0 из ${validFiles.length}`;
+            elements.uploadModal.classList.remove('hidden');
+
+            // 3. Процесс загрузки
+            let completedCount = 0;
+
+            for (const file of validFiles) {
+                const itemEl = elements.uploadList.querySelector(`[data-name="${file.name}"]`);
+                const progressFill = itemEl.querySelector('.upload-progress-fill');
+                const progressText = itemEl.querySelector('.progress-text');
+
+                progressText.textContent = "Загрузка...";
+                
+                const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').toLowerCase();
+                const filePath = `${state.currentUser.id}/${Date.now()}_${safeName}`;
+
+                const { data, error } = await supabase.storage
+                    .from('user-files')
+                    .upload(filePath, file, {
+                        onUploadProgress: (progressEvent) => {
+                            const percent = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                            progressFill.style.width = `${percent}%`;
+                            progressText.textContent = `${percent}%`;
+                        }
+                    });
+
+                if (error) {
+                    progressFill.style.width = '100%';
+                    progressFill.classList.add('!bg-red-500');
+                    progressText.textContent = 'Ошибка';
+                    progressText.classList.add('upload-status-error');
+                    utils.showToast(`Ошибка: ${file.name}`, 'error');
+                } else {
+                    progressFill.style.width = '100%';
+                    progressFill.classList.add('!bg-green-500');
+                    progressText.textContent = 'Готово';
+                    progressText.classList.add('upload-status-done');
+
+                    const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(filePath);
+                    await supabase.from('files').insert({
+                        project_id: localState.activeProject, uploader_id: state.currentUser.id, name: file.name, original_name: file.name,
+                        mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: []
+                    });
+                    await logFileAction('create', file.name);
+                }
+
+                completedCount++;
+                elements.uploadCount.textContent = `${completedCount} из ${validFiles.length}`;
+            }
+
+            // 4. Завершение
+            await loadFiles();
+            elements.filesList.scrollTop = 0;
+
+            // Автоскрытие через 1.5 секунды
+            setTimeout(() => {
+                elements.uploadModal.classList.add('hidden');
+            }, 1500);
         }
 
-        async function logFileAction(action, fileName) { const text = action === 'create' ? `Создал файл: ${fileName}` : `Удалил файл: ${fileName}`; await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text }); }
+        async function logFileAction(action, fileName) { 
+            const text = action === 'create' ? `Создал файл: ${fileName}` : `Удалил файл: ${fileName}`; 
+            await supabase.from('messages').insert({ project_id: localState.activeProject, sender_id: state.currentUser.id, content: text }); 
+        }
 
         async function sendMessage() {
             const text = elements.chatInput.value.trim(); if (!text || !localState.activeProject) return;
