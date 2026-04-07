@@ -343,33 +343,45 @@
         // 6. REALTIME & СОЕДИНЕНИЕ
         // ==========================================
         const setupRealtime = (projectId) => {
-            if (localState.realtimeChannel) {
-                localState.realtimeChannel.unsubscribe();
-                localState.realtimeChannel = null;
-            }
-            if (!projectId) return;
+    // 1. Сначала отписываемся от старого канала, если есть
+    if (localState.realtimeChannel) {
+        localState.realtimeChannel.unsubscribe();
+        localState.realtimeChannel = null;
+    }
+    
+    if (!projectId) return;
 
-            localState.connectionStatus = 'reconnecting';
+    localState.connectionStatus = 'reconnecting';
+    updateConnectionUI();
+
+    // 2. Создаём новый канал
+    const channel = supabase.channel(`chat:${projectId}`, { 
+        config: { broadcast: { self: true } } 
+    });
+
+    // 3. ⚠️ ВАЖНО: Регистрируем ВСЕ обработчики ДО subscribe()
+    channel.on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages', 
+        filter: `project_id=eq.${projectId}` 
+    }, handleNewMessage);
+
+    // 4. Только после всех .on() вызываем subscribe()
+    channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+            localState.realtimeChannel = channel;
+            localState.connectionStatus = 'connected';
+            localState.reconnectAttempts = 0;
             updateConnectionUI();
-
-            const channel = supabase.channel(`chat:${projectId}`, { config: { broadcast: { self: true } } });
-
-            channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${projectId}` }, handleNewMessage);
-
-            channel.subscribe(status => {
-                if (status === 'SUBSCRIBED') {
-                    localState.realtimeChannel = channel;
-                    localState.connectionStatus = 'connected';
-                    localState.reconnectAttempts = 0;
-                    updateConnectionUI();
-                    loadMessages(true);
-                } else {
-                    localState.connectionStatus = 'disconnected';
-                    updateConnectionUI();
-                    scheduleReconnect(projectId);
-                }
-            });
-        };
+            api.loadMessages(true);  // ✅ через api.
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            localState.connectionStatus = 'disconnected';
+            updateConnectionUI();
+            scheduleReconnect(projectId);
+        }
+    });
+};
 
         const scheduleReconnect = (projectId) => {
             if (localState.reconnectAttempts >= CONFIG.MAX_RECONNECT) {
