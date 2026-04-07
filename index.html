@@ -38,7 +38,7 @@
                         'surface-bright': '#0D0D0D',
                     },
                     fontFamily: {
-                        sans: ['SN Pro', 'sans-serif'], // ИЗМЕНЕНО: добавили sans
+                        sans: ['SN Pro', 'sans-serif'],
                         'display': ['SN Pro', 'sans-serif'],
                         'mono': ['SN Pro', 'monospace']
                     }
@@ -68,7 +68,7 @@
         html { scroll-behavior: smooth; }
         
         body {
-            font-family: 'SN Pro', sans-serif; /* ИЗМЕНЕНО: Было Inter */
+            font-family: 'SN Pro', sans-serif;
             background: var(--bg);
             color: var(--fg);
             overflow-x: hidden;
@@ -318,13 +318,11 @@
             50% { transform: scale(1.1); }
         }
 
-        /* Мобильная адаптация */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
             }
-            
             .sidebar.open {
                 transform: translateX(0);
             }
@@ -334,9 +332,7 @@
 <body class="antialiased dark-bg">
     <div id="particles-container" class="fixed inset-0 pointer-events-none z-0" aria-hidden="true"></div>
     
-    <!-- Главный контейнер приложения -->
     <div id="app">
-        <!-- Экран загрузки -->
         <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-surface-bright">
             <div class="text-center">
                 <div class="w-16 h-16 border-2 border-ink/20 border-t-ink rounded-full loading-spinner mx-auto mb-6"></div>
@@ -344,14 +340,12 @@
             </div>
         </div>
 
-        <!-- Экран авторизации (показывается если не авторизован) -->
         <div id="auth-screen" class="hidden fixed inset-0 z-40">
             <div class="scan-line"></div>
             <div class="absolute inset-0 blueprint-grid opacity-50"></div>
             
             <div class="relative z-10 min-h-screen flex items-center justify-center px-4">
                 <div class="w-full max-w-md">
-                    <!-- Логотип -->
                     <div class="text-center mb-12 reveal">
                         <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-gray-light mb-6">
                             <svg class="w-8 h-8 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,9 +356,7 @@
                         <p class="text-ink-muted text-sm tracking-wide">Персональное облачное хранилище</p>
                     </div>
 
-                    <!-- Карточка авторизации -->
                     <div id="auth-card" class="reveal delay-1">
-                        <!-- Состояние: Вход через Google -->
                         <div id="google-auth-view" class="bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
                             <div class="corner-mark corner-mark-tl"></div>
                             <div class="corner-mark corner-mark-tr"></div>
@@ -393,7 +385,6 @@
                             </div>
                         </div>
 
-                        <!-- Состояние: Установка PIN (для новых пользователей) -->
                         <div id="setup-pin-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
                             <div class="corner-mark corner-mark-tl"></div>
                             <div class="corner-mark corner-mark-tr"></div>
@@ -421,7 +412,6 @@
                                        autocomplete="off"
                                        spellcheck="false">
                                 
-                                <!-- Индикатор силы PIN -->
                                 <div class="mt-3">
                                     <div class="flex gap-1 mb-2">
                                         <div class="h-1 flex-1 rounded-full bg-gray-light" id="strength-1"></div>
@@ -450,7 +440,6 @@
                             </button>
                         </div>
 
-                        <!-- Состояние: Ввод PIN (для существующих пользователей) -->
                         <div id="enter-pin-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
                             <div class="corner-mark corner-mark-tl"></div>
                             <div class="corner-mark corner-mark-tr"></div>
@@ -475,7 +464,6 @@
                                        autocomplete="off"
                                        spellcheck="false">
                                 
-                                <!-- Индикатор ввода -->
                                 <div class="flex justify-center gap-2 mt-4" id="pin-dots">
                                     <div class="pin-dot"></div>
                                     <div class="pin-dot"></div>
@@ -503,7 +491,6 @@
                             </button>
                         </div>
 
-                        <!-- Состояние: Ожидание активации -->
                         <div id="pending-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
                             <div class="corner-mark corner-mark-tl"></div>
                             <div class="corner-mark corner-mark-tr"></div>
@@ -540,7 +527,6 @@
                             </div>
                         </div>
 
-                        <!-- Состояние: Заблокирован -->
                         <div id="locked-view" class="hidden bg-gradient-to-br from-card/90 to-surface/80 rounded-2xl p-8 border border-gray-light relative overflow-hidden">
                             <div class="corner-mark corner-mark-tl"></div>
                             <div class="corner-mark corner-mark-tr"></div>
@@ -565,7 +551,6 @@
                         </div>
                     </div>
                     
-                    <!-- Информация о безопасности -->
                     <div class="mt-8 text-center reveal delay-2">
                         <div class="inline-flex items-center gap-2 text-ink-muted text-xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -578,12 +563,9 @@
             </div>
         </div>
 
-        <!-- Основной интерфейс (показывается после авторизации) -->
         <div id="main-screen" class="hidden">
-            <!-- Header -->
             <header id="header" class="fixed top-0 left-0 right-0 z-30 bg-surface-bright/95 border-b border-gray-light/50 backdrop-blur-sm">
                 <div class="flex items-center justify-between h-16 px-4 lg:px-6">
-                    <!-- Логотип и меню (мобильное) -->
                     <div class="flex items-center gap-4">
                         <button id="mobile-menu-btn" class="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl border border-gray-light hover:border-ink/20 transition-colors">
                             <svg class="w-5 h-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -601,16 +583,13 @@
                         </a>
                     </div>
                     
-                    <!-- Навигация (десктоп) -->
                     <nav class="hidden lg:flex items-center gap-8">
                         <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors active" data-page="dashboard">Главная</a>
                         <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="projects">Проекты</a>
                         <a href="#" class="nav-item text-sm text-ink-light hover:text-ink transition-colors" data-page="settings">Настройки</a>
                     </nav>
                     
-                    <!-- Профиль -->
                     <div class="flex items-center gap-3">
-                        <!-- Уведомления -->
                         <button class="relative w-10 h-10 rounded-xl border border-gray-light hover:border-ink/20 transition-colors flex items-center justify-center">
                             <svg class="w-5 h-5 text-ink-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -618,7 +597,6 @@
                             <span class="absolute -top-1 -right-1 w-4 h-4 bg-ink text-surface-bright text-xs rounded-full flex items-center justify-center notification-badge">2</span>
                         </button>
                         
-                        <!-- Профиль -->
                         <div class="relative" id="profile-dropdown-container">
                             <button id="profile-btn" class="flex items-center gap-2 py-2 px-3 rounded-xl border border-gray-light hover:border-ink/20 transition-colors">
                                 <div class="w-7 h-7 rounded-lg overflow-hidden bg-surface" id="header-avatar">
@@ -630,7 +608,6 @@
                                 </svg>
                             </button>
                             
-                            <!-- Выпадающее меню -->
                             <div id="profile-dropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-card rounded-xl border border-gray-light shadow-xl shadow-black/20 py-2 z-50">
                                 <div class="px-4 py-3 border-b border-gray-light">
                                     <p class="text-sm text-ink font-medium" id="dropdown-name">User Name</p>
@@ -655,7 +632,6 @@
                 </div>
             </header>
 
-            <!-- Sidebar (мобильное меню) -->
             <aside id="sidebar" class="sidebar fixed left-0 top-16 bottom-0 w-64 bg-surface-bright border-r border-gray-light/50 z-20 lg:hidden overflow-y-auto">
                 <nav class="p-4">
                     <div class="space-y-1">
@@ -682,39 +658,27 @@
                 </nav>
             </aside>
 
-            <!-- Основной контент -->
             <main id="main-content" class="pt-16 min-h-screen">
-                <!-- Контент загружается динамически -->
                 <div id="page-content">
-                    <!-- Placeholder для динамического контента -->
+                    <div class="flex items-center justify-center py-20 h-[calc(100vh-64px)]">
+                        <div class="w-8 h-8 border-2 border-ink/20 border-t-ink rounded-full loading-spinner"></div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Toast уведомления -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
         <script type="module">
         // ============================================
         // КОНФИГУРАЦИЯ SUPABASE
         // ============================================
-        // ВСТАВЬТЕ СЮДА ВАШИ РЕАЛЬНЫЕ ДАННЫЕ
-        const SUPABASE_URL = 'https://tztqygfqkdgytnvougys.supabase.co'; // например: https://xyzcompany.supabase.co
+        const SUPABASE_URL = 'https://tztqygfqkdgytnvougys.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6dHF5Z2Zxa2RneXRudm91Z3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjgxMDAsImV4cCI6MjA5MDcwNDEwMH0.F0LvZ_fBcTgXL84vEJRZNx3ykes9k9-DmywBhGJvYdc';
         
-        // Проверка конфигурации
         if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || !SUPABASE_URL.startsWith('http')) {
-            document.getElementById('loading-screen').innerHTML = `
-                <div class="text-center p-8 max-w-md">
-                    <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                    <h2 class="text-xl font-semibold text-ink mb-2">Ошибка конфигурации</h2>
-                    <p class="text-ink-muted mb-4">Пожалуйста, вставьте реальные URL и API ключ Supabase в файл index.html</p>
-                    <p class="text-xs text-ink-muted font-mono bg-surface p-3 rounded-lg">SUPABASE_URL: ${SUPABASE_URL}</p>
-                </div>
-            `;
+            document.getElementById('loading-screen').innerHTML = `<div class="text-center p-8 max-w-md"><svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><h2 class="text-xl font-semibold text-ink mb-2">Ошибка конфигурации</h2><p class="text-ink-muted mb-4">Пожалуйста, вставьте реальные URL и API ключ Supabase в файл index.html</p></div>`;
             throw new Error('Invalid Supabase Configuration');
         }
 
@@ -725,15 +689,11 @@
             supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (error) {
             console.error('Supabase init error:', error);
-            document.getElementById('loading-screen').innerHTML = `
-                <div class="text-center p-8">
-                     <div class="text-red-500 mb-4">Ошибка инициализации Supabase: ${error.message}</div>
-                </div>
-            `;
+            document.getElementById('loading-screen').innerHTML = `<div class="text-center p-8"><div class="text-red-500 mb-4">Ошибка инициализации Supabase: ${error.message}</div></div>`;
             throw error;
         }
 
-        window.supabase = supabase; // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+        window.supabase = supabase;
 
         // ============================================
         // СОСТОЯНИЕ ПРИЛОЖЕНИЯ
@@ -747,7 +707,7 @@
             isLoading: true
         };
 
-        window.AppState = AppState; // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+        window.AppState = AppState;
 
         // ============================================
         // КРИПТОГРАФИЯ
@@ -829,10 +789,9 @@
             async getAppUser(userId) {
                 const { data, error } = await supabase
                     .from('app_users')
-                    .select('*, is_super_admin') // <--- Добавили is_super_admin
+                    .select('*, is_super_admin')
                     .eq('id', userId)
                     .single();
-                
                 if (error) throw error;
                 return data;
             },
@@ -840,37 +799,20 @@
             async updatePin(userId, pinHash, salt) {
                 const { error } = await supabase
                     .from('app_users')
-                    .update({ 
-                        pin_hash: pinHash, 
-                        pin_salt: salt,
-                        updated_at: new Date().toISOString()
-                    })
+                    .update({ pin_hash: pinHash, pin_salt: salt, updated_at: new Date().toISOString() })
                     .eq('id', userId);
-                
                 if (error) throw error;
             },
             
             async updateLastLogin(userId) {
-                // Используем прямой запрос вместо RPC для надежности
-                const { error } = await supabase
-                    .from('app_users')
-                    .update({ 
-                        last_login: new Date().toISOString(),
-                        login_attempts: 0,
-                        locked_until: null
-                    })
-                    .eq('id', userId);
-                    
-                if (error) console.error('Failed to update last login:', error);
+                try {
+                    const { error } = await supabase.rpc('update_last_login', { p_user_id: userId });
+                    if (error) console.warn('Last login update failed:', error.message);
+                } catch (e) { console.warn(e); }
             },
             
             async checkUserActive(userId) {
-                const { data, error } = await supabase
-                    .from('app_users')
-                    .select('is_active')
-                    .eq('id', userId)
-                    .single();
-                
+                const { data, error } = await supabase.from('app_users').select('is_active').eq('id', userId).single();
                 if (error) throw error;
                 return data?.is_active || false;
             }
@@ -883,53 +825,31 @@
             showScreen(screenId) {
                 ['loading-screen', 'auth-screen', 'main-screen'].forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
+                    if (el) el.classList.toggle('hidden', id !== screenId);
                 });
-                
-                const target = document.getElementById(screenId);
-                if (target) target.classList.remove('hidden');
             },
             
             showAuthView(viewId) {
                 ['google-auth-view', 'setup-pin-view', 'enter-pin-view', 'pending-view', 'locked-view'].forEach(id => {
                     const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
+                    if (el) el.classList.toggle('hidden', id !== viewId);
                 });
-                
-                const target = document.getElementById(viewId);
-                if (target) target.classList.remove('hidden');
             },
             
             updatePinDots(length) {
-                const dots = document.querySelectorAll('#pin-dots .pin-dot');
-                dots.forEach((dot, i) => {
-                    dot.classList.remove('filled', 'error');
-                    if (i < length) dot.classList.add('filled');
+                document.querySelectorAll('#pin-dots .pin-dot').forEach((dot, i) => {
+                    dot.classList.toggle('filled', i < length);
+                    dot.classList.remove('error');
                 });
             },
             
             updateStrengthIndicator(strength) {
-                const bars = [
-                    document.getElementById('strength-1'),
-                    document.getElementById('strength-2'),
-                    document.getElementById('strength-3'),
-                    document.getElementById('strength-4')
-                ];
+                const bars = [document.getElementById('strength-1'), document.getElementById('strength-2'), document.getElementById('strength-3'), document.getElementById('strength-4')];
                 const text = document.getElementById('strength-text');
-                
                 const colors = ['#EF4444', '#F59E0B', '#22C55E', '#22C55E'];
                 const labels = ['Слабый', 'Средний', 'Хороший', 'Отличный'];
                 
-                bars.forEach((bar, i) => {
-                    if (bar) {
-                        if (i < strength) {
-                            bar.style.background = colors[strength - 1];
-                        } else {
-                            bar.style.background = '#262626';
-                        }
-                    }
-                });
-                
+                bars.forEach((bar, i) => { if (bar) bar.style.background = i < strength ? colors[strength - 1] : '#262626'; });
                 if (text) {
                     text.textContent = strength > 0 ? labels[strength - 1] : 'Введите PIN-код';
                     text.style.color = strength > 0 ? colors[strength - 1] : '#737373';
@@ -941,40 +861,21 @@
                 const email = user?.email || appUser?.email || '';
                 const avatar = appUser?.avatar_url || user?.user_metadata?.avatar_url || '';
                 
-                const updateElement = (id, value, isImg = false) => {
+                const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+                const setImg = (id, src) => {
                     const el = document.getElementById(id);
-                    if (el) {
-                        if (isImg) {
-                            el.src = value || '';
-                            el.style.display = value ? 'block' : 'none';
-                        } else {
-                            el.textContent = value;
-                        }
-                    }
+                    if (el) el.innerHTML = src ? `<img src="${src}" alt="Avatar" class="w-full h-full object-cover">` : '';
                 };
                 
-                updateElement('user-email-display', email);
-                updateElement('user-email-login', email);
-                updateElement('user-email-pending', email);
-                updateElement('header-name', name);
-                updateElement('dropdown-name', name);
-                updateElement('dropdown-email', email);
-                
-                ['user-avatar-setup', 'user-avatar-login', 'user-avatar-pending', 'header-avatar'].forEach(id => {
-                    const container = document.getElementById(id);
-                    if (container) {
-                        if (avatar) {
-                            container.innerHTML = `<img src="${avatar}" alt="Avatar" class="w-full h-full object-cover">`;
-                        }
-                    }
-                });
+                ['user-email-display', 'user-email-login', 'user-email-pending'].forEach(id => setText(id, email));
+                ['header-name', 'dropdown-name'].forEach(id => setText(id, name));
+                setText('dropdown-email', email);
+                ['user-avatar-setup', 'user-avatar-login', 'user-avatar-pending', 'header-avatar'].forEach(id => setImg(id, avatar));
             },
             
             toggleDropdown(show) {
                 const dropdown = document.getElementById('profile-dropdown');
-                if (dropdown) {
-                    dropdown.classList.toggle('hidden', !show);
-                }
+                if (dropdown) dropdown.classList.toggle('hidden', !show);
             }
         };
 
@@ -993,65 +894,30 @@
                 if (!content) return;
                 
                 AppState.currentPage = pageName;
-                
-                // Индикатор загрузки
-                content.innerHTML = `
-                    <div class="flex items-center justify-center py-20 h-[calc(100vh-64px)]">
-                        <div class="w-8 h-8 border-2 border-ink/20 border-t-ink rounded-full loading-spinner"></div>
-                    </div>
-                `;
+                content.innerHTML = `<div class="flex items-center justify-center py-20 h-[calc(100vh-64px)]"><div class="w-8 h-8 border-2 border-ink/20 border-t-ink rounded-full loading-spinner"></div></div>`;
                 
                 const pageInfo = this.pages[pageName];
-                
                 if (pageInfo) {
                     try {
                         const response = await fetch(pageInfo.file);
                         if (response.ok) {
                             const html = await response.text();
-                            
-                            // Используем DOMParser для корректной обработки
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(html, 'text/html');
-                            
-                            // Очищаем контейнер
                             content.innerHTML = '';
+                            content.append(...Array.from(doc.body.childNodes));
                             
-                            // Переносим содержимое body
-                            const nodes = Array.from(doc.body.childNodes);
-                            nodes.forEach(node => content.appendChild(node));
-                            
-                            // Находим и исполняем скрипты
-                            const scripts = content.querySelectorAll('script');
-                            scripts.forEach(oldScript => {
+                            content.querySelectorAll('script').forEach(oldScript => {
                                 const newScript = document.createElement('script');
-                                
-                                // Копируем атрибуты (если есть)
-                                for (const attr of oldScript.attributes) {
-                                    newScript.setAttribute(attr.name, attr.value);
-                                }
-                                
-                                // Устанавливаем содержимое
-                                // Важно: оборачиваем, чтобы скрипт выполнился
-                                newScript.textContent = oldScript.textContent;
-                                
-                                // Заменяем старый скрипт на новый (это запускает его)
-                                oldScript.parentNode.replaceChild(newScript, oldScript);
+                                if (oldScript.src) newScript.src = oldScript.src;
+                                else newScript.textContent = oldScript.textContent;
+                                oldScript.replaceWith(newScript);
                             });
-
                             return;
                         }
-                    } catch (e) {
-                        console.error('Page load error:', e);
-                    }
+                    } catch (e) { console.error('Page load error:', e); }
                 }
-                
-                // Заглушка
-                content.innerHTML = `
-                    <div class="max-w-7xl mx-auto p-6 text-center h-[calc(100vh-64px)] flex flex-col justify-center">
-                        <h1 class="text-2xl font-light text-ink mb-4">Страница в данный момент в разработке</h1>
-                        <p class="text-ink-muted">Контент для страницы «${pageName}» скоро появится.</p>
-                    </div>
-                `;
+                content.innerHTML = `<div class="max-w-7xl mx-auto p-6 text-center h-[calc(100vh-64px)] flex flex-col justify-center"><h1 class="text-2xl font-light text-ink mb-4">Страница в разработке</h1><p class="text-ink-muted">Контент скоро появится.</p></div>`;
             }
         };
 
@@ -1060,81 +926,48 @@
         // ============================================
         const EventHandlers = {
             init() {
-                document.getElementById('google-login-btn')?.addEventListener('click', this.handleGoogleLogin);
+                const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+                
+                bind('google-login-btn', this.handleGoogleLogin);
                 document.getElementById('pin-setup-input')?.addEventListener('input', (e) => this.handlePinSetupInput(e));
                 document.getElementById('pin-confirm-input')?.addEventListener('input', (e) => this.handlePinConfirmInput(e));
-                document.getElementById('save-pin-btn')?.addEventListener('click', () => this.handleSavePin());
+                bind('save-pin-btn', () => this.handleSavePin());
                 document.getElementById('pin-login-input')?.addEventListener('input', (e) => this.handlePinLoginInput(e));
-                document.getElementById('login-pin-btn')?.addEventListener('click', () => this.handlePinLogin());
-                document.getElementById('logout-btn')?.addEventListener('click', () => this.handleLogout());
-                document.getElementById('check-status-btn')?.addEventListener('click', () => this.handleCheckStatus());
-                document.getElementById('logout-pending-btn')?.addEventListener('click', () => this.handleLogout());
-                document.getElementById('logout-locked-btn')?.addEventListener('click', () => this.handleLogout());
-                document.getElementById('logout-main-btn')?.addEventListener('click', () => this.handleLogout());
+                bind('login-pin-btn', () => this.handlePinLogin());
+                bind('logout-btn', () => this.handleLogout());
+                bind('check-status-btn', () => this.handleCheckStatus());
+                bind('logout-pending-btn', () => this.handleLogout());
+                bind('logout-locked-btn', () => this.handleLogout());
+                bind('logout-main-btn', () => this.handleLogout());
                 
                 document.querySelectorAll('[data-page]').forEach(el => {
                     el.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const page = e.currentTarget.dataset.page;
-                        PageManager.loadPage(page);
-                        
+                        PageManager.loadPage(el.dataset.page);
                         document.querySelectorAll('.nav-item, .sidebar-item').forEach(n => n.classList.remove('active'));
-                        e.currentTarget.classList.add('active');
-                        
+                        el.classList.add('active');
                         document.getElementById('sidebar')?.classList.remove('open');
                     });
                 });
                 
-                document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
-                    document.getElementById('sidebar')?.classList.toggle('open');
-                });
-                
-                document.getElementById('profile-btn')?.addEventListener('click', () => {
-                    UI.toggleDropdown(document.getElementById('profile-dropdown')?.classList.contains('hidden'));
-                });
-                
+                bind('mobile-menu-btn', () => document.getElementById('sidebar')?.classList.toggle('open'));
+                bind('profile-btn', () => UI.toggleDropdown(document.getElementById('profile-dropdown')?.classList.contains('hidden')));
                 document.addEventListener('click', (e) => {
-                    const container = document.getElementById('profile-dropdown-container');
-                    if (!container?.contains(e.target)) {
-                        UI.toggleDropdown(false);
-                    }
+                    if (!document.getElementById('profile-dropdown-container')?.contains(e.target)) UI.toggleDropdown(false);
                 });
             },
             
             async handleGoogleLogin() {
-    try {
-        // Определяем базовый URL в зависимости от окружения
-        let redirectUrl;
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Локальная разработка
-            redirectUrl = window.location.origin + window.location.pathname;
-        } else {
-            // GitHub Pages (убедитесь, что путь совпадает с названием репозитория)
-            // window.location.origin вернет https://<nick>.github.io
-            // window.location.pathname вернет /<repo-name>/index.html или /<repo-name>/
-            redirectUrl = window.location.origin + window.location.pathname;
-        }
-
-        console.log("Redirect URL:", redirectUrl); // Для отладки
-
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: redirectUrl
-            }
-        });
-        
-        if (error) throw error;
-    } catch (error) {
-        Utils.showToast('Ошибка авторизации: ' + error.message, 'error');
-    }
-},
+                try {
+                    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } });
+                    if (error) throw error;
+                } catch (error) { Utils.showToast('Ошибка авторизации: ' + error.message, 'error'); }
+            },
             
             handlePinSetupInput(e) {
                 const pin = e.target.value.toUpperCase();
                 e.target.value = pin;
-                const strength = Crypto.checkPinStrength(pin);
-                UI.updateStrengthIndicator(strength);
+                UI.updateStrengthIndicator(Crypto.checkPinStrength(pin));
                 this.checkPinMatch();
             },
             
@@ -1147,50 +980,34 @@
                 const pin = document.getElementById('pin-setup-input')?.value || '';
                 const confirm = document.getElementById('pin-confirm-input')?.value || '';
                 const btn = document.getElementById('save-pin-btn');
-                const isValid = pin.length === 10 && pin === confirm && Utils.validatePin(pin);
-                if (btn) btn.disabled = !isValid;
+                if (btn) btn.disabled = !(pin.length === 10 && pin === confirm && Utils.validatePin(pin));
             },
             
             async handleSavePin() {
                 const pin = document.getElementById('pin-setup-input')?.value || '';
                 const confirm = document.getElementById('pin-confirm-input')?.value || '';
-                
-                if (pin !== confirm) {
-                    Utils.showToast('PIN-коды не совпадают', 'error');
-                    return;
-                }
+                if (pin !== confirm) return Utils.showToast('PIN-коды не совпадают', 'error');
                 
                 try {
                     const btn = document.getElementById('save-pin-btn');
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML = '<div class="w-5 h-5 border-2 border-surface-bright/20 border-t-surface-bright rounded-full loading-spinner"></div>';
-                    }
+                    btn.disabled = true;
+                    btn.innerHTML = '<div class="w-5 h-5 border-2 border-surface-bright/20 border-t-surface-bright rounded-full loading-spinner"></div>';
                     
                     const salt = Crypto.generateSalt();
                     const pinHash = await Crypto.hashPin(pin, salt);
-                    
                     await API.updatePin(AppState.currentUser.id, pinHash, salt);
                     AppState.appUser.pin_hash = pinHash;
                     AppState.appUser.pin_salt = salt;
                     
                     Utils.showToast('PIN-код успешно установлен', 'success');
-                    
                     const isActive = await API.checkUserActive(AppState.currentUser.id);
-                    if (isActive) {
-                        AppState.isAuthenticated = true;
-                        UI.showScreen('main-screen');
-                        PageManager.loadPage('dashboard');
-                    } else {
-                        UI.showAuthView('pending-view');
-                    }
+                    if (isActive) { AppState.isAuthenticated = true; UI.showScreen('main-screen'); PageManager.loadPage('dashboard'); }
+                    else { UI.showAuthView('pending-view'); }
                 } catch (error) {
                     Utils.showToast('Ошибка сохранения PIN: ' + error.message, 'error');
                     const btn = document.getElementById('save-pin-btn');
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = 'Сохранить PIN-код';
-                    }
+                    btn.disabled = false;
+                    btn.textContent = 'Сохранить PIN-код';
                 }
             },
             
@@ -1208,45 +1025,33 @@
                 
                 try {
                     const btn = document.getElementById('login-pin-btn');
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML = '<div class="w-5 h-5 border-2 border-surface-bright/20 border-t-surface-bright rounded-full loading-spinner"></div>';
-                    }
+                    btn.disabled = true;
+                    btn.innerHTML = '<div class="w-5 h-5 border-2 border-surface-bright/20 border-t-surface-bright rounded-full loading-spinner"></div>';
                     
                     const pinHash = await Crypto.hashPin(pin, AppState.appUser.pin_salt);
-                    
                     if (pinHash !== AppState.appUser.pin_hash) {
-                        const dots = document.querySelectorAll('#pin-dots .pin-dot');
-                        dots.forEach(dot => dot.classList.add('error'));
+                        document.querySelectorAll('#pin-dots .pin-dot').forEach(dot => dot.classList.add('error'));
                         document.getElementById('pin-error')?.classList.remove('hidden');
                         document.getElementById('pin-login-input').value = '';
-                        
                         setTimeout(() => {
-                            dots.forEach(dot => dot.classList.remove('error', 'filled'));
+                            document.querySelectorAll('#pin-dots .pin-dot').forEach(dot => dot.classList.remove('error', 'filled'));
                             document.getElementById('pin-error')?.classList.add('hidden');
                         }, 500);
-                        
-                        if (btn) {
-                            btn.disabled = true;
-                            btn.textContent = 'Войти';
-                        }
+                        btn.disabled = true;
+                        btn.textContent = 'Войти';
                         return;
                     }
                     
                     await API.updateLastLogin(AppState.currentUser.id);
                     AppState.isAuthenticated = true;
-                    
                     Utils.showToast('Добро пожаловать!', 'success');
                     UI.showScreen('main-screen');
                     PageManager.loadPage('dashboard');
-                    
                 } catch (error) {
                     Utils.showToast('Ошибка входа: ' + error.message, 'error');
                     const btn = document.getElementById('login-pin-btn');
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.textContent = 'Войти';
-                    }
+                    btn.disabled = false;
+                    btn.textContent = 'Войти';
                 }
             },
             
@@ -1255,37 +1060,20 @@
                     const isActive = await API.checkUserActive(AppState.currentUser.id);
                     if (isActive) {
                         Utils.showToast('Аккаунт активирован!', 'success');
-                        if (AppState.appUser.pin_hash) {
-                            UI.showAuthView('enter-pin-view');
-                        } else {
-                            UI.showAuthView('setup-pin-view');
-                        }
-                    } else {
-                        Utils.showToast('Аккаунт всё ещё на модерации', 'warning');
-                    }
-                } catch (error) {
-                    Utils.showToast('Ошибка проверки: ' + error.message, 'error');
-                }
+                        UI.showAuthView(AppState.appUser.pin_hash ? 'enter-pin-view' : 'setup-pin-view');
+                    } else { Utils.showToast('Аккаунт всё ещё на модерации', 'warning'); }
+                } catch (error) { Utils.showToast('Ошибка проверки: ' + error.message, 'error'); }
             },
             
             async handleLogout() {
                 try {
                     await supabase.auth.signOut();
-                    AppState.currentUser = null;
-                    AppState.appUser = null;
-                    AppState.isAuthenticated = false;
-                    
-                    if (document.getElementById('pin-setup-input')) document.getElementById('pin-setup-input').value = '';
-                    if (document.getElementById('pin-confirm-input')) document.getElementById('pin-confirm-input').value = '';
-                    if (document.getElementById('pin-login-input')) document.getElementById('pin-login-input').value = '';
-                    
+                    AppState.currentUser = null; AppState.appUser = null; AppState.isAuthenticated = false;
+                    ['pin-setup-input', 'pin-confirm-input', 'pin-login-input'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
                     UI.showAuthView('google-auth-view');
                     UI.showScreen('auth-screen');
-                    
                     Utils.showToast('Вы вышли из системы', 'info');
-                } catch (error) {
-                    Utils.showToast('Ошибка выхода: ' + error.message, 'error');
-                }
+                } catch (error) { Utils.showToast('Ошибка выхода: ' + error.message, 'error'); }
             }
         };
 
@@ -1294,90 +1082,33 @@
         // ============================================
         async function initApp() {
             try {
-                // Устанавливаем таймаут для начальной загрузки
-                const timeoutId = setTimeout(() => {
-                    if (AppState.isLoading) {
-                         Utils.showToast('Сервер долго не отвечает. Проверьте подключение.', 'warning');
-                         UI.showScreen('auth-screen');
-                    }
-                }, 10000);
-
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                clearTimeout(timeoutId);
-                
+                const {  { session }, error } = await supabase.auth.getSession();
                 if (error) throw error;
                 
-                if (!session?.user) {
-                    AppState.isLoading = false;
-                    UI.showScreen('auth-screen');
-                    UI.showAuthView('google-auth-view');
-                    initRevealAnimations();
-                    EventHandlers.init();
-                    return;
-                }
+                if (!session?.user) { AppState.isLoading = false; UI.showScreen('auth-screen'); UI.showAuthView('google-auth-view'); initRevealAnimations(); EventHandlers.init(); return; }
                 
                 AppState.currentUser = session.user;
-                
-                // Попытка получить данные пользователя
-                try {
-                    AppState.appUser = await API.getAppUser(session.user.id);
-                } catch (e) {
-                    // Если пользователя нет в таблице, ждем создания триггером (2 сек)
+                try { AppState.appUser = await API.getAppUser(session.user.id); } catch (e) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    try {
-                        AppState.appUser = await API.getAppUser(session.user.id);
-                    } catch (retryError) {
-                        // Если триггер не сработал, создаем запись вручную (fallback)
-                        // Примечание: RLS должен позволять вставку для своего user id, или используем service_role (не безопасно на клиенте)
-                        // Здесь мы просто показываем ошибку, так как на клиенте мы не можем обойти RLS без service_role ключа
-                        console.error("User record not found in app_users table. Make sure the trigger works or RLS allows insert.");
-                        throw new Error("Профиль пользователя не найден. Обратитесь к администратору.");
-                    }
+                    try { AppState.appUser = await API.getAppUser(session.user.id); } catch (retryError) { throw new Error("Профиль пользователя не найден."); }
                 }
                 
                 UI.setUserInfo(session.user, AppState.appUser);
-                
                 const isActive = await API.checkUserActive(session.user.id);
+                if (!isActive) { UI.showScreen('auth-screen'); UI.showAuthView('pending-view'); initRevealAnimations(); EventHandlers.init(); return; }
+                if (!AppState.appUser.pin_hash) { UI.showScreen('auth-screen'); UI.showAuthView('setup-pin-view'); initRevealAnimations(); EventHandlers.init(); return; }
                 
-                if (!isActive) {
-                    UI.showScreen('auth-screen');
-                    UI.showAuthView('pending-view');
-                    initRevealAnimations();
-                    EventHandlers.init();
-                    return;
-                }
-                
-                if (!AppState.appUser.pin_hash) {
-                    UI.showScreen('auth-screen');
-                    UI.showAuthView('setup-pin-view');
-                    initRevealAnimations();
-                    EventHandlers.init();
-                    return;
-                }
-                
-                UI.showScreen('auth-screen');
-                UI.showAuthView('enter-pin-view');
-                initRevealAnimations();
-                EventHandlers.init();
-                
+                UI.showScreen('auth-screen'); UI.showAuthView('enter-pin-view');
+                initRevealAnimations(); EventHandlers.init();
             } catch (error) {
                 console.error('Init error:', error);
-                AppState.isLoading = false;
-                UI.showScreen('auth-screen');
-                UI.showAuthView('google-auth-view');
+                AppState.isLoading = false; UI.showScreen('auth-screen'); UI.showAuthView('google-auth-view');
                 Utils.showToast('Ошибка инициализации: ' + error.message, 'error');
             }
         }
         
         function initRevealAnimations() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    }
-                });
-            }, { threshold: 0.1 });
+            const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: 0.1 });
             document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         }
         
@@ -1395,65 +1126,23 @@
             }
         }
         
-                // Слушаем изменения авторизации
         supabase.auth.onAuthStateChange((event, session) => {
-            // Логируем событие для отладки
-            console.log('Auth Event:', event);
-
-            // SIGNED_IN срабатывает при каждом обновлении страницы, если есть сессия.
-            // Нам НЕ нужно перезагружать страницу в этом случае, иначе будет цикл.
-            
-            // Если это ТАБЛИЦА (TOKEN_REFRESHED), тоже ничего не делаем, сессия обновляется автоматически.
-            
-            // Если пользователь ВОШЕЛ (SIGNED_IN) и в URL есть токены (первичный вход от Google)
-            if (event === 'SIGNED_IN') {
-                // Проверяем, есть ли в URL хеш от Google (#access_token)
-                if (window.location.hash.includes('access_token')) {
-                    console.log('OAuth callback detected, cleaning URL...');
-                    
-                    // Очищаем URL от данных Google, чтобы они не висели в адресной строке
-                    // Используем replaceState, чтобы не перезагружать страницу
-                    window.history.replaceState(null, '', window.location.pathname);
-                    
-                    // Инициализируем приложение заново с чистой сессией
-                    // Небольшая задержка, чтобы Supabase успел сохранить сессию
-                    setTimeout(() => {
-                        initApp();
-                    }, 100);
-                }
+            if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+                window.history.replaceState(null, '', window.location.pathname);
+                setTimeout(() => initApp(), 100);
             }
-            
-            // Если пользователь вышел
             if (event === 'SIGNED_OUT') {
-                AppState.currentUser = null;
-                AppState.appUser = null;
-                AppState.isAuthenticated = false;
-                UI.showAuthView('google-auth-view');
-                UI.showScreen('auth-screen');
+                AppState.currentUser = null; AppState.appUser = null; AppState.isAuthenticated = false;
+                UI.showAuthView('google-auth-view'); UI.showScreen('auth-screen');
             }
         });
         
-        // Запуск
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                initApp();
-                initParticles();
-            });
-        } else {
-            initApp();
-            initParticles();
-        }
+            document.addEventListener('DOMContentLoaded', () => { initApp(); initParticles(); });
+        } else { initApp(); initParticles(); }
         
-        // Стили для анимации частиц
         const style = document.createElement('style');
-        style.textContent = `
-            @keyframes particleFloat {
-                0%, 100% { opacity: 0.05; transform: translate(0, 0); }
-                25% { opacity: 0.15; transform: translate(20px, -15px); }
-                50% { opacity: 0.08; transform: translate(-15px, 20px); }
-                75% { opacity: 0.12; transform: translate(15px, 10px); }
-            }
-        `;
+        style.textContent = `@keyframes particleFloat { 0%, 100% { opacity: 0.05; transform: translate(0, 0); } 25% { opacity: 0.15; transform: translate(20px, -15px); } 50% { opacity: 0.08; transform: translate(-15px, 20px); } 75% { opacity: 0.12; transform: translate(15px, 10px); } }`;
         document.head.appendChild(style);
     </script>
 </body>
