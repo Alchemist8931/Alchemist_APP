@@ -400,14 +400,34 @@
         };
 
         const handleNewMessage = async (payload) => {
-            const msg = payload.new;
-            if (localState.messages.some(m => m.id === msg.id) || localState.tempMsgs.has(msg.id)) return;
-            if (msg.sender_id) fetchAuthorLazy(msg.sender_id);
-            msg.author = { name: getAuthorName(msg.sender_id) || 'Пользователь' };
-            localState.messages.push(msg);
-            appendMessage(msg);
-            scrollToBottom();
-        };
+    const msg = payload.new;
+    
+    // ✅ Проверка 1: сообщение уже есть в локальном массиве по реальному ID
+    const existingIdx = localState.messages.findIndex(m => m.id === msg.id);
+    if (existingIdx !== -1) {
+        // Обновляем существующее сообщение (например, меняем статус pending → sent)
+        localState.messages[existingIdx] = { ...localState.messages[existingIdx], ...msg, status: 'sent' };
+        renderMessages(); // Перерисовываем чат
+        return;
+    }
+    
+    // ✅ Проверка 2: игнорируем сообщения, которые мы только что отправили (по content + sender + time)
+    const isDuplicate = localState.messages.some(m => 
+        m.sender_id === msg.sender_id && 
+        m.content === msg.content && 
+        Math.abs(new Date(m.created_at) - new Date(msg.created_at)) < 2000 // 2 секунды окно
+    );
+    if (isDuplicate) return;
+    
+    // ✅ Загружаем имя автора, если нет в кэше
+    if (msg.sender_id) await fetchAuthorLazy(msg.sender_id);
+    msg.author = { name: getAuthorName(msg.sender_id) || 'Пользователь' };
+    
+    // Добавляем новое сообщение
+    localState.messages.push(msg);
+    appendMessage(msg);
+    scrollToBottom();
+};
 
         // ==========================================
         // 7. РЕНДЕРИНГ UI
@@ -546,7 +566,7 @@
                 const statusIcon = isSelf ? (m.status === 'pending' ? '<svg class="w-3 h-3 text-ink-muted animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' : '<svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>') : '';
                 
                 if (isSelf) {
-                    return `<div class="flex justify-end mb-2"><div class="max-w-[70%] flex flex-col items-end"><div class="flex items-center justify-end gap-1 mb-0.5"><span class="text-[10px] text-ink-muted">${time}</span><span class="text-[11px] font-semibold text-ink-muted">${escapeHtml(author)}</span>${statusIcon}</div><div class="bg-ink/10 rounded-xl px-3 py-1.5 border border-ink/10 text-left"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
+                    return `<div class="flex ${isSelf ? 'justify-end' : 'justify-start'} mb-2" data-msg-id="${m.id}"><div class="max-w-[70%] flex flex-col items-end"><div class="flex items-center justify-end gap-1 mb-0.5"><span class="text-[10px] text-ink-muted">${time}</span><span class="text-[11px] font-semibold text-ink-muted">${escapeHtml(author)}</span>${statusIcon}</div><div class="bg-ink/10 rounded-xl px-3 py-1.5 border border-ink/10 text-left"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
                 }
                 return `<div class="flex justify-start mb-2"><div class="max-w-[70%] flex flex-col items-start"><div class="flex items-center gap-2 mb-0.5"><span class="text-[11px] font-semibold text-ink">${escapeHtml(author)}</span><span class="text-[10px] text-ink-muted">${time}</span></div><div class="bg-card rounded-xl px-3 py-1.5 border border-gray-light"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
             }).join('');
@@ -560,8 +580,8 @@
             const statusIcon = isSelf ? (m.status === 'pending' ? '<svg class="w-3 h-3 text-ink-muted animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' : '<svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>') : '';
             
             let html = isSelf 
-                ? `<div class="flex justify-end mb-2"><div class="max-w-[70%] flex flex-col items-end"><div class="flex items-center justify-end gap-1 mb-0.5"><span class="text-[10px] text-ink-muted">${time}</span><span class="text-[11px] font-semibold text-ink-muted">${escapeHtml(author)}</span>${statusIcon}</div><div class="bg-ink/10 rounded-xl px-3 py-1.5 border border-ink/10 text-left"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`
-                : `<div class="flex justify-start mb-2"><div class="max-w-[70%] flex flex-col items-start"><div class="flex items-center gap-2 mb-0.5"><span class="text-[11px] font-semibold text-ink">${escapeHtml(author)}</span><span class="text-[10px] text-ink-muted">${time}</span></div><div class="bg-card rounded-xl px-3 py-1.5 border border-gray-light"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
+                ? `<div class="flex justify-end mb-2" data-msg-id="${m.id}"><div class="max-w-[70%] flex flex-col items-end"><div class="flex items-center justify-end gap-1 mb-0.5"><span class="text-[10px] text-ink-muted">${time}</span><span class="text-[11px] font-semibold text-ink-muted">${escapeHtml(author)}</span>${statusIcon}</div><div class="bg-ink/10 rounded-xl px-3 py-1.5 border border-ink/10 text-left"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`
+                : `<div class="flex justify-start mb-2" data-msg-id="${m.id}"><div class="max-w-[70%] flex flex-col items-start"><div class="flex items-center gap-2 mb-0.5"><span class="text-[11px] font-semibold text-ink">${escapeHtml(author)}</span><span class="text-[10px] text-ink-muted">${time}</span></div><div class="bg-card rounded-xl px-3 py-1.5 border border-gray-light"><p class="text-xs text-ink-light whitespace-pre-wrap break-words">${escapeHtml(m.content)}</p></div></div></div>`;
             ui.chatMessages.insertAdjacentHTML('beforeend', html);
         };
 
@@ -613,40 +633,74 @@
         };
 
         const sendMessage = async () => {
-            const text = ui.chatInput.value.trim();
-            if (!text || !localState.activeProjectId) return;
-            
-            if (localState.connectionStatus !== 'connected') {
-                utils.showToast("Нет соединения. Попробуйте позже.", "warning");
-                return;
-            }
+    const text = ui.chatInput.value.trim();
+    if (!text || !localState.activeProjectId) return;
+    
+    if (localState.connectionStatus !== 'connected') {
+        utils.showToast("Нет соединения. Попробуйте позже.", "warning");
+        return;
+    }
 
-            ui.chatInput.value = ''; ui.chatInput.style.height = 'auto';
-            
-            const tempId = 'temp-' + Date.now();
-            localState.tempMsgs.add(tempId);
-            appendMessage({ id: tempId, content: text, created_at: new Date().toISOString(), sender_id: state.currentUser.id, author: { name: state.appUser.name }, status: 'pending' });
-            scrollToBottom();
+    ui.chatInput.value = ''; 
+    ui.chatInput.style.height = 'auto';
+    
+    // Создаём временное сообщение с уникальным ID
+    const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+    localState.tempMsgs.add(tempId);
+    
+    const tempMsg = {
+        id: tempId,
+        content: text,
+        created_at: new Date().toISOString(),
+        sender_id: state.currentUser.id,
+        author: { name: state.appUser?.name || 'Вы' },
+        status: 'pending',
+        project_id: localState.activeProjectId
+    };
+    
+    // Добавляем в массив и отображаем
+    localState.messages.push(tempMsg);
+    appendMessage(tempMsg);
+    scrollToBottom();
 
-            try {
-                const { data, error } = await supabase.from('messages').insert({ project_id: localState.activeProjectId, sender_id: state.currentUser.id, content: text }).select().single();
-                localState.tempMsgs.delete(tempId);
-                if (error) throw error;
-                
-                const idx = localState.messages.findIndex(m => m.id === tempId);
-                if (idx !== -1) {
-                    localState.messages[idx] = { ...data, status: 'sent' };
-                    // Заменяем временное сообщение в DOM
-                    const tempEl = ui.chatMessages.querySelector(`[data-msg-id="${tempId}"]`); // Note: need data-msg-id if targeting directly, but here we just re-render or let realtime handle it. For simplicity, we'll rely on realtime INSERT or reload.
-                    // В production лучше обновлять конкретный узел, но для скорости оставим как есть.
-                }
-            } catch (e) {
-                console.error('Send error:', e);
-                utils.showToast('Ошибка отправки', 'error');
-                localState.messages = localState.messages.filter(m => m.id !== tempId);
-                renderMessages();
-            }
-        };
+    try {
+        // Отправляем в БД
+        const { data, error } = await supabase
+            .from('messages')
+            .insert({ 
+                project_id: localState.activeProjectId, 
+                sender_id: state.currentUser.id, 
+                content: text 
+            })
+            .select()
+            .single();
+            
+        localState.tempMsgs.delete(tempId);
+        
+        if (error) throw error;
+        
+        // ✅ НАХОДИМ и ОБНОВЛЯЕМ временное сообщение вместо удаления
+        const tempIdx = localState.messages.findIndex(m => m.id === tempId);
+        if (tempIdx !== -1) {
+            // Заменяем временное сообщение на реальное с сервера
+            localState.messages[tempIdx] = { 
+                ...data, 
+                author: { name: getAuthorName(data.sender_id) || state.appUser?.name || 'Вы' },
+                status: 'sent' 
+            };
+            // Перерисовываем только это сообщение (оптимизация) или весь чат
+            renderMessages();
+        }
+        
+    } catch (e) {
+        console.error('Send error:', e);
+        utils.showToast('Ошибка отправки', 'error');
+        // Удаляем только при реальной ошибке
+        localState.messages = localState.messages.filter(m => m.id !== tempId);
+        localState.tempMsgs.delete(tempId);
+        renderMessages();
+    }
+};
 
         const handleFiles = async (filesList) => {
             if (!filesList.length || !localState.activeProjectId) return;
