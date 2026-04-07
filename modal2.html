@@ -664,7 +664,7 @@
                     });
                     if (error) throw error;
                     
-                    const {  urlData } = supabase.storage.from('user-files').getPublicUrl(path);
+                    const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(path);
                     await supabase.from('files').insert({ project_id: localState.activeProjectId, uploader_id: state.currentUser.id, name: file.name, original_name: file.name, mime_type: file.type, size: file.size, storage_path: urlData.publicUrl, tags: [] });
                     txt.textContent = 'Готово'; txt.classList.add('upload-status-done'); fill.classList.add('!bg-green-500');
                 } catch (e) {
@@ -679,13 +679,13 @@
         const openMembersModal = async (projectId) => {
             localState.activeProjectId = projectId;
             ui.membersModal.classList.remove('hidden');
-            ui.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>();
+            ui.membersList.innerHTML = '<div class="text-center text-xs text-ink-muted">Загрузка...</div>';
             
             const project = localState.projects.find(p => p.id === projectId);
             const isOwner = project && project.owner_id === state.currentUser.id;
             ui.deleteProjectSection.classList.toggle('hidden', !(localState.isSuperAdmin || isOwner));
 
-            const {  members, error } = await supabase.from('project_members').select('id, user_id, app_users(id, email, name, is_super_admin)').eq('project_id', projectId);
+            const { data: members, error } = await supabase.from('project_members').select('id, user_id, app_users(id, email, name, is_super_admin)').eq('project_id', projectId);
             if (error) { ui.membersList.innerHTML = '<div class="text-red-500 text-xs">Ошибка</div>'; return; }
 
             let ownerHtml = '';
@@ -737,7 +737,7 @@
             document.getElementById('delete-project-modal-btn').addEventListener('click', () => {
                 showConfirm('Удалить проект и все файлы?', async () => {
                     utils.showToast('Удаление...', 'info');
-                    const {  files } = await supabase.from('files').select('storage_path').eq('project_id', localState.activeProjectId);
+                    const { data: files } = await supabase.from('files').select('storage_path').eq('project_id', localState.activeProjectId);
                     if (files?.length) {
                         const paths = files.map(f => extractStoragePath(f.storage_path)).filter(Boolean);
                         if (paths.length) await supabase.storage.from('user-files').remove(paths);
