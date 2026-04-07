@@ -1082,7 +1082,7 @@
         // ============================================
         async function initApp() {
             try {
-                const {  { session }, error } = await supabase.auth.getSession();
+                const { data: { session }, error } = await supabase.auth.getSession();
                 if (error) throw error;
                 
                 if (!session?.user) { AppState.isLoading = false; UI.showScreen('auth-screen'); UI.showAuthView('google-auth-view'); initRevealAnimations(); EventHandlers.init(); return; }
